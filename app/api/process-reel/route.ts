@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { CINEMATIC_STYLES } from "@/config/styles";
+import { isMockMode, getMockDb, saveMockDb } from "@/lib/mockDb";
+import * as fs from "fs";
+import * as path from "path";
 
 export const runtime = "nodejs";
 
@@ -26,6 +28,54 @@ export async function GET(request: Request) {
       { valid: false, error: "Referencia de pedido no proporcionada." },
       { status: 400 }
     );
+  }
+
+  // --- MOCK MODE FALLBACK ---
+  if (isMockMode()) {
+    console.log("[MOCK MODE] Validating order reference in local JSON database:", orderReference);
+    const db = getMockDb();
+    const order = db.orders[orderReference];
+
+    if (!order) {
+      return NextResponse.json(
+        { valid: false, error: "La referencia de pago no es válida o está pendiente de confirmación." },
+        { status: 404 }
+      );
+    }
+
+    if (order.payment_status !== "paid") {
+      return NextResponse.json(
+        { valid: false, error: "El pago de este pedido aún está pendiente de confirmación." },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicates
+    if (order.status === "completed" || db.intakes[orderReference]) {
+      return NextResponse.json(
+        { valid: false, error: "Ya se ha enviado el material de producción para este pedido." },
+        { status: 400 }
+      );
+    }
+
+    const action = searchParams.get("action");
+    if (action === "get-upload-url") {
+      // Direct mock upload to our local PUT endpoint!
+      const uploadUrl = `${new URL(request.url).origin}/api/process-reel?action=mock-upload&order_reference=${orderReference}`;
+      const videoUrl = `${new URL(request.url).origin}/mock-storage/raw-videos/${orderReference}/video.mp4`;
+
+      return NextResponse.json({
+        valid: true,
+        email: order.customer_email,
+        uploadUrl: uploadUrl,
+        videoUrl: videoUrl
+      });
+    }
+
+    return NextResponse.json({
+      valid: true,
+      email: order.customer_email
+    });
   }
 
   try {
@@ -66,25 +116,13 @@ export async function GET(request: Request) {
       );
     }
 
-    // Optional: issue a secure signed upload URL for direct client-side storage upload
+    // Proxy-upload pattern to completely bypass browser CORS limitations and guarantee H.264 video uploads
     const action = searchParams.get("action");
     if (action === "get-upload-url") {
-      const fileName = searchParams.get("filename") || "video.mp4";
-      const extension = fileName.split(".").pop()?.toLowerCase() ?? "mp4";
-      const storagePath = `${orderReference}/video.${extension}`;
-      
-      const { data: signedData, error: signedUrlError } = await supabase.storage
-        .from("raw-videos")
-        .createSignedUploadUrl(storagePath);
+      const uploadUrl = `${new URL(request.url).origin}/api/process-reel?action=mock-upload&order_reference=${orderReference}`;
+      const storagePath = `${orderReference}/video.mp4`;
 
-      if (signedUrlError || !signedData) {
-        return NextResponse.json(
-          { valid: false, error: "No se pudo generar la URL de subida." },
-          { status: 500 }
-        );
-      }
-
-      // Generate the public URL that will be populated after successful PUT upload
+      // Generate the public URL that will be populated in Supabase Storage
       const { data: { publicUrl } } = supabase.storage
         .from("raw-videos")
         .getPublicUrl(storagePath);
@@ -92,7 +130,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         valid: true,
         email: order.customer_email,
-        uploadUrl: signedData.signedUrl,
+        uploadUrl: uploadUrl,
         videoUrl: publicUrl
       });
     }
@@ -124,6 +162,40 @@ export async function POST(request: Request) {
     }
 
     const { sessionId, selectedStyle, videoUrl, scriptText } = parsed.data;
+
+    // --- MOCK MODE FALLBACK ---
+    if (isMockMode()) {
+      console.log("[MOCK MODE] Processing JSON metadata in local JSON database...");
+      
+      const db = getMockDb();
+      const order = db.orders[sessionId];
+
+      if (!order) {
+        return NextResponse.json({ error: "Pedido no encontrado." }, { status: 400 });
+      }
+
+      // Update mock order state
+      db.orders[sessionId].status = "data_received";
+      
+      // Save mock intake
+      db.intakes[sessionId] = {
+        order_reference: sessionId,
+        customer_email: order.customer_email,
+        style: selectedStyle,
+        script: scriptText,
+        training_video_path: `mock-storage/raw-videos/${sessionId}/video.mp4`,
+        training_video_bucket: "raw-videos",
+        status: "received",
+        created_at: new Date().toISOString()
+      };
+      
+      saveMockDb(db);
+
+      return NextResponse.json({
+        success: true,
+        redirectUrl: "/intake/success"
+      });
+    }
 
     const supabase = createSupabaseAdmin();
 
@@ -175,62 +247,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Cinematic Franchise Logic
-    const styleConfig = CINEMATIC_STYLES[selectedStyle];
-    if (!styleConfig) {
-      return NextResponse.json(
-        { error: "Estilo cinematográfico no soportado." },
-        { status: 400 }
-      );
-    }
-
-    // Select a random background from dynamicBackgrounds based on style
-    const backgrounds = styleConfig.dynamicBackgrounds;
-    const randomBackground = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-
-    // Generate a random seed number
-    const randomSeed = Math.floor(Math.random() * 2147483647); // Max standard 32-bit int
-
-    // Build the prompt prefix
-    const promptPrefix = `cinematic video, style of ${styleConfig.name}, `;
-
-    // Build definitive Payload ready for AI render
-    const aiPayload = {
-      input_video: videoUrl,
-      prompt: `${promptPrefix}${randomBackground}, spoken: "${scriptText}"`,
-      seed: randomSeed,
-      status: "ready_for_render"
-    };
-
-    // Output definitive payload to console log simulating the AI API trigger
-    console.log("=== AI PAYLOAD READY FOR RENDER ===");
-    console.log(JSON.stringify({ target_api_payload_structure: aiPayload }, null, 2));
-    console.log("====================================");
-
-    // 5. Save final intake record in public.intakes for transactional security
-    const { error: writeError } = await supabase.from("intakes").insert({
-      order_reference: sessionId,
-      customer_email: order.customer_email,
-      style: selectedStyle,
-      script: scriptText,
-      training_video_path: `${sessionId}/video.mp4`, // standardized path as requested
-      training_video_bucket: "raw-videos",
-      status: "received"
-    });
-
-    if (writeError) {
-      // Revert order status if writing intake fails
-      await supabase
-        .from("orders")
-        .update({ status: "paid", updated_at: new Date().toISOString() })
-        .eq("stripe_session_id", sessionId);
-
-      return NextResponse.json(
-        { error: "Fallo al registrar los datos de producción. Estado revertido." },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json({
       success: true,
       redirectUrl: "/intake/success"
@@ -240,5 +256,76 @@ export async function POST(request: Request) {
       { error: "Error interno del servidor al procesar los datos de producción." },
       { status: 500 }
     );
+  }
+}
+
+// PUT /api/process-reel?action=mock-upload&order_reference=XXX
+// Handles proxy uploads locally (in mock mode) or securely uploads to real Supabase Storage (in production)
+export async function PUT(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action");
+    const orderReference = searchParams.get("order_reference");
+
+    if (action === "mock-upload" && orderReference) {
+      console.log("Receiving video file PUT upload proxy for:", orderReference);
+      
+      const buffer = Buffer.from(await request.arrayBuffer());
+      
+      if (isMockMode()) {
+        // Save directly to the local public folder (Mock Mode)
+        const filePath = path.resolve(
+          process.cwd(), 
+          `public/mock-storage/raw-videos/${orderReference}/video.mp4`
+        );
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.writeFileSync(filePath, buffer);
+        console.log("[MOCK MODE] Local video file successfully written to:", filePath);
+        return NextResponse.json({ success: true });
+      } else {
+        // Upload from our Next.js backend to real Supabase Storage (Production Mode)
+        // This completely bypasses browser-side CORS issues!
+        console.log("[PRODUCTION] Uploading proxy video from Next.js server to real Supabase Storage bucket 'raw-videos'...");
+        const supabase = createSupabaseAdmin();
+        const storagePath = `${orderReference}/video.mp4`;
+
+        let { data, error } = await supabase.storage
+          .from("raw-videos")
+          .upload(storagePath, buffer, {
+            contentType: "video/mp4",
+            upsert: true
+          });
+
+        if (error) {
+          console.warn("[PRODUCTION] Supabase Storage upload error. Attempting to auto-create 'raw-videos' bucket...", error.message);
+          // Try to auto-create the bucket using service role key
+          await supabase.storage.createBucket("raw-videos", { public: true });
+          
+          // Retry upload
+          const retry = await supabase.storage
+            .from("raw-videos")
+            .upload(storagePath, buffer, {
+              contentType: "video/mp4",
+              upsert: true
+            });
+            
+          data = retry.data;
+          error = retry.error;
+        }
+
+        if (error) {
+          console.error("Supabase Storage upload error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        console.log("[PRODUCTION] Upload to Supabase Storage succeeded:", data?.path);
+        return NextResponse.json({ success: true });
+      }
+    }
+
+    return NextResponse.json({ error: "Acción no autorizada." }, { status: 400 });
+  } catch (err: any) {
+    console.error("Error in upload PUT proxy handler:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

@@ -24,22 +24,16 @@ export function PricingCard({ packageId, featured = false }: PricingCardProps) {
       <p className="delivery">{pack.delivery}</p>
 
       <ul>
-        <li>
-          <Check />
-          Gemelo digital creado desde tu vídeo base
-        </li>
-        <li>
-          <Check />
-          {pack.tone}
-        </li>
-        <li>
-          <Check />
-          Resultado final enviado por email
-        </li>
+        {pack.items.map((item) => (
+          <li key={item}>
+            <Check />
+            {item}
+          </li>
+        ))}
       </ul>
 
       <Link className="price-button" href={getStripeLink(packageId)}>
-        Elegir pack
+        {pack.cta}
         <ArrowRight />
       </Link>
     </article>

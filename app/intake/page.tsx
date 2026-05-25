@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ReelForm } from "@/components/ReelForm";
 
 export default async function IntakePage({
@@ -26,7 +27,9 @@ export default async function IntakePage({
         </p>
 
         <div className="mt-12">
-          <ReelForm initialOrderReference={orderReference} />
+          <Suspense fallback={<div className="h-64 w-full animate-pulse bg-zinc/20 rounded-2xl" />}>
+            <ReelForm initialOrderReference={orderReference} />
+          </Suspense>
         </div>
       </div>
     </main>

@@ -11,16 +11,40 @@ import { PricingCard } from "@/components/PricingCard";
 
 const process = [
   {
-    title: "Selecciona",
-    text: "Elige un clip o tres escenas y paga al instante con Stripe."
+    title: "Elige tu formato",
+    text: "Foto o vídeo: selecciona el pack adecuado y paga al instante con Stripe."
   },
   {
-    title: "Interpreta",
-    text: "Sube un vídeo base de un minuto y escribe tu escena."
+    title: "Envía tu material",
+    text: "Sube tu producto, render o vídeo base de 1 minuto junto a la descripción de escena."
   },
   {
-    title: "Recibe",
-    text: "Producimos tu gemelo digital y entregamos por email en 24h."
+    title: "Recibe el resultado",
+    text: "Entregamos las piezas listas para publicar directamente en tu email en menos de 24h."
+  }
+];
+
+const sectors = [
+  {
+    number: "01",
+    title: "Producto",
+    subtitle: "E-commerce y retail",
+    description: "Genera decenas de fotos de producto en escenarios, texturas y ambientes diferentes. Sin organizar otra sesión de fotos.",
+    tags: ["Foto", "Vídeo"]
+  },
+  {
+    number: "02",
+    title: "Espacio",
+    subtitle: "Arquitectura e interiorismo",
+    description: "Transforma renders vacíos en espacios habitados. Añade personas y atmósferas que venden el proyecto antes de construirlo.",
+    tags: ["Foto", "Render"]
+  },
+  {
+    number: "03",
+    title: "Formador",
+    subtitle: "E-learning y cursos online",
+    description: "Graba tu gemelo digital en múltiples escenas y estilos desde un único vídeo base. Contenido para meses en una tarde.",
+    tags: ["Vídeo", "Clip"]
   }
 ];
 
@@ -46,15 +70,20 @@ export default function HomePage() {
   return (
     <main className="page">
       <section className="hero">
-        <Image
-          alt=""
-          className="hero-image"
-          fill
-          priority
-          sizes="100vw"
-          src="/reeltwin-hero.png"
-        />
-        <div className="hero-overlay" />
+        <div className="hero-visuals" aria-hidden="true">
+          <div className="hero-visuals-inner">
+            <div className="hero-vis-item">
+              <Image alt="" fill priority sizes="(max-width: 900px) 0vw, 48vw" src="/mujer.jpeg" style={{ objectFit: "cover", objectPosition: "center 20%" }} />
+            </div>
+            <div className="hero-vis-item">
+              <Image alt="" fill sizes="(max-width: 900px) 0vw, 48vw" src="/sillon.jpeg" style={{ objectFit: "cover" }} />
+            </div>
+            <div className="hero-vis-item">
+              <Image alt="" fill sizes="(max-width: 900px) 0vw, 48vw" src="/taza.jpeg" style={{ objectFit: "cover" }} />
+            </div>
+          </div>
+          <div className="hero-visuals-fade" />
+        </div>
 
         <header className="header shell">
           <a className="brand" href="/" aria-label="ReelTwin.ai inicio">
@@ -70,17 +99,18 @@ export default function HomePage() {
         </header>
 
         <div className="hero-copy shell">
-          <p className="eyebrow">Gemelos digitales para performers</p>
+          <p className="eyebrow">E-commerce · Arquitectura · Formación</p>
           <h1>
-            No puedes estar en dos sitios a la vez... <em>¿o sí?</em>
+            Foto y vídeo<br />de estudio.{" "}
+            <em>Sin estudio.</em>
           </h1>
           <p className="hero-description">
-            Multiplica tu presencia en vídeo en reels, redes sociales, clases online y cualquier
-            pieza en la que muestres tu cara y tu cuerpo, con un gemelo digital indistinguible de tu yo real.
+            Genera contenido visual de nivel editorial para tus productos, espacios y formadores.
+            Sin alquilar estudio, sin sesión de fotos, sin esperar semanas.
           </p>
           <div className="hero-actions">
             <a className="button-primary" href="#pricing">
-              Crear por 29 €
+              Ver precios
               <ArrowRight />
             </a>
             <a className="button-play" href="#demo">
@@ -92,22 +122,22 @@ export default function HomePage() {
 
         <div className="hero-stats shell" aria-label="Características principales">
           <div>
-            <strong>10 segundos</strong>
-            <span>Clip final</span>
+            <strong>Foto + Vídeo</strong>
+            <span>Contenido dual</span>
           </div>
           <div>
             <strong>24 horas</strong>
             <span>Entrega</span>
           </div>
           <div>
-            <strong>Sin cuenta</strong>
-            <span>Pago y subida directa</span>
+            <strong>Sin rodaje</strong>
+            <span>Solo tu material base</span>
           </div>
         </div>
       </section>
 
       <section className="statement shell">
-        <p className="eyebrow">Tu próxima escena</p>
+        <p className="eyebrow">Tu próximo proyecto</p>
         <h2>
           La IA no te sustituye.
           <br />
@@ -115,12 +145,34 @@ export default function HomePage() {
         </h2>
       </section>
 
+      <section className="sectors shell" id="sectores">
+        <div className="section-heading">
+          <p className="eyebrow">Para quién</p>
+          <h2>Tres sectores, un proceso.</h2>
+        </div>
+        <div className="sectors-grid">
+          {sectors.map((s) => (
+            <article className="sector-card" key={s.title}>
+              <span className="sector-number">{s.number}</span>
+              <h3>{s.title}</h3>
+              <p className="sector-subtitle">{s.subtitle}</p>
+              <p>{s.description}</p>
+              <div className="sector-tags">
+                {s.tags.map((tag) => (
+                  <span className="sector-tag" key={tag}>{tag}</span>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="demo shell" id="demo">
         <BeforeAfterSlider />
         <div className="demo-caption">
           <p>
-            Mismo intérprete. Nuevo universo visual. Voz clonada y dirección
-            cinematográfica en una pieza preparada para publicar.
+            Mismo material base. Nuevo universo visual. Foto y vídeo de nivel editorial
+            listos para publicar.
           </p>
         </div>
       </section>
@@ -147,14 +199,15 @@ export default function HomePage() {
         <div className="section-heading pricing-heading">
           <div>
             <p className="eyebrow">Pago único</p>
-            <h2>Elige tu escena.</h2>
+            <h2>Elige tu formato.</h2>
             <p className="section-copy">
-              Sin suscripciones ni registro previo. Selecciona un formato y
+              Sin suscripciones ni registro previo. Selecciona foto o vídeo y
               empieza a crear.
             </p>
           </div>
         </div>
         <div className="pricing-grid">
+          <PricingCard packageId="foto" />
           <PricingCard packageId="monologo" />
           <PricingCard packageId="showcase" featured />
         </div>
@@ -174,7 +227,7 @@ export default function HomePage() {
 
       <section className="closing shell">
         <h2>
-          Tu próxima escena
+          Tu próximo proyecto
           <br />
           empieza aquí.
         </h2>

@@ -9,3 +9,15 @@ coverage/
 *.log
 screenshots/
 .vercel
+.env*
+
+# Sandbox local
+scratch/
+public/mock-storage/
+public/mock-samples/
+public/out.css
+
+# Raw source images (solo van las copiadas en public/)
+/mujer.jpeg
+/sillon.jpeg
+/taza.jpeg

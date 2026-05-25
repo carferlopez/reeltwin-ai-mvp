@@ -75,18 +75,30 @@ textarea {
   overflow: hidden;
 }
 
-.hero-image {
-  object-fit: cover;
-  object-position: center center;
+.hero-visuals {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 48%;
+  z-index: 0;
 }
 
-.hero-overlay {
+.hero-visuals-inner {
+  display: grid;
+  grid-template-rows: 1fr 1fr 1fr;
+  height: 100%;
+  gap: 2px;
+}
+
+.hero-vis-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-visuals-fade {
   position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(8, 9, 11, 0.96) 0%, rgba(8, 9, 11, 0.78) 34%, rgba(8, 9, 11, 0.08) 72%),
-    linear-gradient(0deg, rgba(8, 9, 11, 0.92) 0%, transparent 34%),
-    linear-gradient(180deg, rgba(8, 9, 11, 0.65) 0%, transparent 24%);
+  inset: 0 auto 0 0;
+  width: 70%;
+  background: linear-gradient(90deg, var(--background) 0%, transparent 100%);
 }
 
 .header {
@@ -390,6 +402,75 @@ textarea {
   text-transform: uppercase;
 }
 
+.sectors {
+  padding: 92px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sectors-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 56px;
+}
+
+.sector-card {
+  min-height: 320px;
+  border-left: 1px solid var(--line);
+  padding: 0 48px 48px;
+}
+
+.sector-card:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.sector-number {
+  display: block;
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.sector-card h3 {
+  margin: 48px 0 4px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 2.6rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.sector-subtitle {
+  margin: 0 0 18px;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sector-card > p:last-of-type {
+  max-width: 300px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.68;
+}
+
+.sector-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.sector-tag {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 16px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .workflow {
   border-block: 1px solid var(--line);
   padding: 92px 0;
@@ -460,7 +541,7 @@ textarea {
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 18px;
 }
 
@@ -658,14 +739,8 @@ textarea {
     min-height: 815px;
   }
 
-  .hero-image {
-    object-position: 67% center;
-  }
-
-  .hero-overlay {
-    background:
-      linear-gradient(0deg, rgba(8, 9, 11, 0.98) 0%, rgba(8, 9, 11, 0.88) 47%, rgba(8, 9, 11, 0.23) 100%),
-      linear-gradient(180deg, rgba(8, 9, 11, 0.72) 0%, transparent 25%);
+  .hero-visuals {
+    display: none;
   }
 
   .header {
@@ -767,9 +842,25 @@ textarea {
   }
 
   .steps,
+  .sectors-grid,
   .pricing-grid,
   .assurance-grid {
     grid-template-columns: 1fr;
+  }
+
+  .sector-card {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 30px 0;
+    min-height: 0;
+  }
+
+  .sector-card:first-child {
+    border-top: 0;
+  }
+
+  .sector-card h3 {
+    margin-top: 20px;
   }
 
   .steps {
