@@ -90,6 +90,28 @@ set public = true,
 create index if not exists orders_stripe_session_id_idx
 on public.orders (stripe_session_id);
 
+create table if not exists public.leads (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  company text not null,
+  email text not null,
+  project text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.leads enable row level security;
+
+drop policy if exists "No public leads access" on public.leads;
+
+create policy "No public leads access"
+on public.leads
+for all
+using (false)
+with check (false);
+
+create index if not exists leads_created_at_idx
+on public.leads (created_at desc);
+
 create index if not exists intakes_purge_after_idx
 on public.intakes (purge_after)
 where training_video_path is not null;

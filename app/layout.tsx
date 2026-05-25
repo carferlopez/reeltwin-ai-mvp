@@ -14,9 +14,9 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "ReelTwin.ai | Gemelos digitales para clips cinematográficos",
+  title: "ReelTwin.ai | Producción de video con IA para empresas",
   description:
-    "Genera un clip cinematográfico de 10 segundos con tu gemelo digital, voz clonada y entrega en 24 horas.",
+    "Producimos clips con el gemelo digital de tu portavoz, guiados por dirección creativa. Brief, producción y entrega. Sin estudio, sin agenda.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000")
 };
 
