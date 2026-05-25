@@ -148,11 +148,11 @@ export default function HomePage() {
           <div>
             <p className="eyebrow">Pago único</p>
             <h2>Elige tu escena.</h2>
+            <p className="section-copy">
+              Sin suscripciones ni registro previo. Selecciona un formato y
+              empieza a crear.
+            </p>
           </div>
-          <p className="section-copy">
-            Sin suscripciones ni registro previo. Selecciona un formato y
-            empieza a crear.
-          </p>
         </div>
         <div className="pricing-grid">
           <PricingCard packageId="monologo" />
