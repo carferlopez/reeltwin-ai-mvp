@@ -273,7 +273,9 @@ textarea {
 .comparison {
   --reveal: 50%;
   position: relative;
-  aspect-ratio: 2.2 / 1;
+  aspect-ratio: 836 / 941;
+  max-width: 600px;
+  margin-inline: auto;
   overflow: hidden;
   border-radius: 8px;
   background: var(--surface);
@@ -285,17 +287,17 @@ textarea {
 .comparison-layer {
   position: absolute;
   inset: 0;
-  background-image: url("/reeltwin-demo.png");
   background-repeat: no-repeat;
-  background-size: 200% 100%;
+  background-size: cover;
+  background-position: center;
 }
 
 .comparison-original {
-  background-position: left center;
+  background-image: url("/reeltwin-original.png");
 }
 
 .comparison-result {
-  background-position: right center;
+  background-image: url("/reeltwin-result.png");
   clip-path: inset(0 0 0 var(--reveal));
 }
 
@@ -722,9 +724,7 @@ textarea {
     padding-bottom: 72px;
   }
 
-  .comparison {
-    aspect-ratio: 1 / 0.78;
-  }
+
 
   .comparison-label {
     top: 16px;
