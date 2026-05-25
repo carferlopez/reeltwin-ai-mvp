@@ -5,19 +5,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#050505",
-        steel: "#16181a",
-        zinc: "#25282b",
-        signal: "#f8e71c",
-        mint: "#41f0a3",
-        danger: "#ff4d4d"
+        ink: "#08090b",
+        steel: "#12161a",
+        zinc: "#20262c",
+        signal: "#d7ff54",
+        mint: "#53d7c2",
+        danger: "#ff6666"
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "Arial", "Helvetica", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"]
-      },
-      boxShadow: {
-        hard: "8px 8px 0 #000"
+        sans: ["var(--font-sans)", "Arial", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "monospace"]
       }
     }
   },
