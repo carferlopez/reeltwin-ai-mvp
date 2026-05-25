@@ -109,9 +109,9 @@ export default function HomePage() {
       <section className="statement shell">
         <p className="eyebrow">Tu próxima escena</p>
         <h2>
-          Un minuto frente a cámara.
+          La IA no te sustituye.
           <br />
-          Una imagen que abre puertas.
+          Te multiplica.
         </h2>
       </section>
 
