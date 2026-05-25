@@ -111,41 +111,63 @@ export async function POST(request: Request) {
       console.log("No GEMINI_API_KEY environment variable found. Simulating síncrono Gemini Omni render...");
     }
 
-    // Paso D: Almacenamiento
-    // Since Gemini Omni produces high-fidelity text-to-scene transformations, we read the uploaded training video 
-    // from 'raw-videos' and save it to the public 'completed-reels' bucket under 'sessionId/completed.mp4' 
-    // to simulate the síncrono generation process end-to-end.
-    const rawFileName = "video.mp4"; // standard filename in frontend signed upload
-    const { data: fileBlob, error: downloadError } = await supabase.storage
-      .from("raw-videos")
-      .download(`${sessionId}/${rawFileName}`);
+    // ========================================================
+    // PASO D: OBTENCIÓN Y ALMACENAMIENTO (SIMULACIÓN VS REAL)
+    // ========================================================
 
-    if (downloadError || !fileBlob) {
-      console.log("Download from raw-videos failed, trying fallback standard folder...");
-      // Try to find the file using the end of the videoUrl path if custom
-      const urlPath = videoUrl.split("/").pop();
-      const { data: fileBlobRetry, error: downloadErrorRetry } = await supabase.storage
+    // Control de velocidad: usa variable de entorno o cambia a 'false' cuando conectes la IA real
+    const IS_SIMULATION = process.env.NEXT_PUBLIC_VIDEO_SIMULATION === "true" || true; 
+
+    let finalVideoBlob: any;
+
+    if (IS_SIMULATION) {
+      // --- MODO GUERRILLA / SIMULACIÓN ---
+      // Reutiliza el vídeo base que el usuario acaba de subir para verificar los tubos del sistema
+      const sourcePath = `${sessionId}/video.mp4`; // Ajustado al formato estandarizado en la carga del frontend
+      
+      const { data: sourceBlob, error: downloadError } = await supabase.storage
         .from("raw-videos")
-        .download(`${sessionId}/${urlPath}`);
+        .download(sourcePath);
 
-      if (downloadErrorRetry || !fileBlobRetry) {
-        throw new Error("No se pudo recuperar el vídeo base para el renderizado.");
+      if (downloadError) {
+        throw new Error(`[Simulación] Fallo al descargar vídeo base: ${downloadError.message}`);
       }
+      
+      finalVideoBlob = sourceBlob;
+    } else {
+      // --- MODO PRODUCCIÓN / REALIA ---
+      // Supongamos que tu llamada previa al motor de vídeo (Google Veo, Runway, Luma, etc.) 
+      // guardó la URL resultante en una variable 'aiGeneratedVideoUrl'
+      const aiGeneratedVideoUrl = ""; // <- Aquí mapearás el output real de la API de vídeo
+
+      if (!aiGeneratedVideoUrl) {
+        throw new Error("[Producción] La API de generación no devolvió ninguna URL de vídeo válida.");
+      }
+
+      // Descarga del renderizado en memoria de ejecución (Vercel Serverless)
+      const videoDownloadResponse = await fetch(aiGeneratedVideoUrl);
+      if (!videoDownloadResponse.ok) {
+        throw new Error("[Producción] No se pudo descargar el vídeo renderizado desde los servidores de la IA.");
+      }
+      
+      finalVideoBlob = await videoDownloadResponse.blob();
     }
 
+    // --- TUBERÍA UNIFICADA DE SALIDA ---
+    // Este bloque es agnóstico al origen del vídeo; simplemente ejecuta su función de manera excelente
     const completedPath = `${sessionId}/completed.mp4`;
     const { error: uploadError } = await supabase.storage
       .from("completed-reels")
-      .upload(completedPath, fileBlob || downloadError, {
+      .upload(completedPath, finalVideoBlob, {
         contentType: "video/mp4",
         upsert: true
       });
 
     if (uploadError) {
-      throw new Error("Fallo al almacenar el vídeo renderizado en el bucket seguro.");
+      throw new Error(`Fallo al almacenar el vídeo final en el bucket 'completed-reels': ${uploadError.message}`);
     }
 
-    // Retrieve the public URL for completed video download
+    // Obtención de la URL pública que consumirá el reproductor del Frontend
     const { data: { publicUrl } } = supabase.storage
       .from("completed-reels")
       .getPublicUrl(completedPath);
@@ -171,7 +193,7 @@ export async function POST(request: Request) {
       customer_email: order.customer_email,
       style: selectedStyle,
       script: scriptText,
-      training_video_path: `${sessionId}/${rawFileName}`,
+      training_video_path: `${sessionId}/video.mp4`,
       training_video_bucket: "raw-videos",
       result_video_path: completedPath,
       status: "delivered",
