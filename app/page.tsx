@@ -75,8 +75,8 @@ export default function HomePage() {
             No puedes estar en dos sitios a la vez... <em>¿o sí?</em>
           </h1>
           <p className="hero-description">
-            Multiplica tu presencia en más reels, clases online y cualquier vídeo
-            en el que muestres tu cara, con un gemelo digital indistinguible de tu yo real.
+            Multiplica tu presencia en reels, clases online y cualquier vídeo
+            en el que muestres tu cara y tu cuerpo, con un gemelo digital indistinguible de tu yo real.
           </p>
           <div className="hero-actions">
             <a className="button-primary" href="#pricing">
