@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ArrowRight, Building2, GraduationCap, LockKeyhole, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
+import { ArrowRight, Building2, GraduationCap, ShoppingBag } from "lucide-react";
 import { ContactForm } from "@/components/ContactForm";
 
 const steps = [
@@ -38,23 +38,6 @@ const cases = [
   }
 ];
 
-const reasons = [
-  {
-    icon: Zap,
-    title: "Dirección creativa",
-    text: "Sabemos qué pedirle a la IA. Un prompt mal formulado produce video inutilizable. Uno bien construido, un activo de marca."
-  },
-  {
-    icon: ShieldCheck,
-    title: "Consistencia de marca",
-    text: "Tus brand guidelines aplicados clip a clip: tono, color, ritmo y mensaje alineados con tu identidad."
-  },
-  {
-    icon: LockKeyhole,
-    title: "Revisión humana",
-    text: "Cada entregable pasa por ojos expertos antes de llegar a ti. La IA propone; nosotros validamos."
-  }
-];
 
 export default function HomePage() {
   return (
@@ -167,18 +150,6 @@ export default function HomePage() {
               </article>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="assurance" id="por-que">
-        <div className="shell assurance-grid">
-          {reasons.map(({ icon: Icon, title, text }) => (
-            <article key={title}>
-              <Icon />
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
         </div>
       </section>
 
