@@ -9,3 +9,4 @@ coverage/
 *.log
 screenshots/
 .vercel
+tsconfig.tsbuildinfo
