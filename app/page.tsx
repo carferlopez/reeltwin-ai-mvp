@@ -72,7 +72,7 @@ export default function HomePage() {
         <div className="hero-copy shell">
           <p className="eyebrow">Gemelos digitales para performers</p>
           <h1>
-            No puedes estar en dos sitios a la vez... <em>¿o a lo mejor sí?</em>
+            No puedes estar en dos sitios a la vez... <em>¿o sí?</em>
           </h1>
           <p className="hero-description">
             Un clip cinematográfico protagonizado por tu gemelo digital. Diez
