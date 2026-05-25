@@ -188,7 +188,10 @@ export default function HomePage() {
         <span className="brand">
           ReelTwin<span>.ai</span>
         </span>
-        <span>Clips cinematográficos con gemelos digitales</span>
+        <div className="footer-info">
+          <span>Clips cinematográficos con gemelos digitales</span>
+          <span>© Carlos Makes, 2026</span>
+        </div>
         <span>Entrega en 24h</span>
       </footer>
     </main>

@@ -641,6 +641,14 @@ textarea {
   color: var(--text);
 }
 
+.footer-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
 @media (max-width: 900px) {
   .shell {
     width: min(100% - 40px, 640px);
@@ -823,5 +831,11 @@ textarea {
   .footer {
     flex-direction: column;
     align-items: start;
+    gap: 16px;
+  }
+
+  .footer-info {
+    align-items: start;
+    text-align: left;
   }
 }
