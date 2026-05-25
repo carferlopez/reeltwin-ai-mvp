@@ -75,8 +75,8 @@ export default function HomePage() {
             No puedes estar en dos sitios a la vez... <em>¿o sí?</em>
           </h1>
           <p className="hero-description">
-            Un clip cinematográfico protagonizado por tu gemelo digital. Diez
-            segundos listos para casting, portfolio o contenido. Entrega en 24 horas.
+            Multiplica tu presencia en más reels, clases online y cualquier vídeo
+            en el que muestres tu cara, con un gemelo digital indistinguible de tu yo real.
           </p>
           <div className="hero-actions">
             <a className="button-primary" href="#pricing">
