@@ -1,27 +1,22 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { CINEMATIC_STYLES } from "@/config/styles";
 
 export const runtime = "nodejs";
 
-const allowedVideoTypes = new Set([
-  "video/mp4",
-  "video/quicktime",
-  "video/webm"
-]);
-
-// Validation Schema for POST
+// Validation Schema for JSON POST payload
 const processReelSchema = z.object({
-  email: z.string().email("El email proporcionado no es válido."),
-  order_reference: z.string().min(1, "La referencia del pedido es requerida."),
-  style: z.enum(["nordic-noir", "indie-sundance"], {
+  sessionId: z.string().min(1, "El ID de sesión es obligatorio."),
+  selectedStyle: z.enum(["nordic-noir", "indie-sundance"], {
     errorMap: () => ({ message: "El estilo cinematográfico seleccionado no es válido." })
   }),
-  script: z.string().min(10, "El guion debe tener al menos 10 caracteres.").max(1200, "El guion no puede superar los 1200 caracteres.")
+  videoUrl: z.string().url("La URL del vídeo no es válida."),
+  scriptText: z.string().min(10, "El guion debe tener al menos 10 caracteres.").max(500, "El guion no puede superar los 500 caracteres.")
 });
 
-// GET /api/process-reel?order_reference=XXX
-// Validates payment status and retrieves user email
+// GET /api/process-reel?order_reference=XXX[&action=get-upload-url][&filename=video.mp4]
+// Validates payment status, retrieves email, and optionally issues signed upload URLs
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const orderReference = searchParams.get("order_reference");
@@ -71,6 +66,37 @@ export async function GET(request: Request) {
       );
     }
 
+    // Optional: issue a secure signed upload URL for direct client-side storage upload
+    const action = searchParams.get("action");
+    if (action === "get-upload-url") {
+      const fileName = searchParams.get("filename") || "video.mp4";
+      const extension = fileName.split(".").pop()?.toLowerCase() ?? "mp4";
+      const storagePath = `${orderReference}/video.${extension}`;
+      
+      const { data: signedData, error: signedUrlError } = await supabase.storage
+        .from("raw-videos")
+        .createSignedUploadUrl(storagePath);
+
+      if (signedUrlError || !signedData) {
+        return NextResponse.json(
+          { valid: false, error: "No se pudo generar la URL de subida." },
+          { status: 500 }
+        );
+      }
+
+      // Generate the public URL that will be populated after successful PUT upload
+      const { data: { publicUrl } } = supabase.storage
+        .from("raw-videos")
+        .getPublicUrl(storagePath);
+
+      return NextResponse.json({
+        valid: true,
+        email: order.customer_email,
+        uploadUrl: signedData.signedUrl,
+        videoUrl: publicUrl
+      });
+    }
+
     return NextResponse.json({
       valid: true,
       email: order.customer_email
@@ -84,46 +110,28 @@ export async function GET(request: Request) {
 }
 
 // POST /api/process-reel
-// Processes material upload and creates database entries
+// Receives JSON metadata, updates order status, processes Cinematic Franchise, and creates intake
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
+    const body = await request.json();
     
-    const parsed = processReelSchema.safeParse({
-      email: formData.get("email"),
-      order_reference: formData.get("order_reference"),
-      style: formData.get("style"),
-      script: formData.get("script")
-    });
+    // Validate JSON input
+    const parsed = processReelSchema.safeParse(body);
 
     if (!parsed.success) {
-      const firstError = parsed.error.issues[0]?.message || "Datos del formulario inválidos.";
+      const firstError = parsed.error.issues[0]?.message || "Datos JSON inválidos.";
       return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    const video = formData.get("training_video");
-    if (!(video instanceof File) || !allowedVideoTypes.has(video.type)) {
-      return NextResponse.json(
-        { error: "Formato de vídeo no soportado (debe ser MP4, MOV o WebM)." },
-        { status: 400 }
-      );
-    }
-
-    // 250 MB size limit validation on server side
-    if (video.size > 250 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "El archivo de vídeo supera el límite permitido de 250 MB." },
-        { status: 413 }
-      );
-    }
+    const { sessionId, selectedStyle, videoUrl, scriptText } = parsed.data;
 
     const supabase = createSupabaseAdmin();
 
-    // 1. Strict server-side security validation against Supabase orders table
+    // 1. Double check server-side security validation against orders table
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select("customer_email, payment_status")
-      .eq("stripe_session_id", parsed.data.order_reference)
+      .eq("stripe_session_id", sessionId)
       .single();
 
     if (orderError || !order) {
@@ -144,7 +152,7 @@ export async function POST(request: Request) {
     const { data: existingIntake } = await supabase
       .from("intakes")
       .select("id")
-      .eq("order_reference", parsed.data.order_reference)
+      .eq("order_reference", sessionId)
       .maybeSingle();
 
     if (existingIntake) {
@@ -154,41 +162,71 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Upload File to Supabase Storage Buckets
-    const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "training-videos";
-    const extension = video.name.split(".").pop()?.toLowerCase() ?? "mp4";
-    const storagePath = `${parsed.data.order_reference}/${crypto.randomUUID()}.${extension}`;
+    // 3. Connect to Supabase and update the orders table setting status to 'data_received'
+    const { error: updateOrderError } = await supabase
+      .from("orders")
+      .update({ status: "data_received", updated_at: new Date().toISOString() })
+      .eq("stripe_session_id", sessionId);
 
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(storagePath, video, {
-        contentType: video.type,
-        upsert: false
-      });
-
-    if (uploadError) {
+    if (updateOrderError) {
       return NextResponse.json(
-        { error: "Fallo al subir el vídeo de entrenamiento al almacenamiento seguro." },
+        { error: "Fallo al actualizar el estado de la orden en la base de datos." },
         { status: 500 }
       );
     }
 
-    // 4. Save intake data into public.intakes (with custom style column)
+    // 4. Cinematic Franchise Logic
+    const styleConfig = CINEMATIC_STYLES[selectedStyle];
+    if (!styleConfig) {
+      return NextResponse.json(
+        { error: "Estilo cinematográfico no soportado." },
+        { status: 400 }
+      );
+    }
+
+    // Select a random background from dynamicBackgrounds based on style
+    const backgrounds = styleConfig.dynamicBackgrounds;
+    const randomBackground = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+
+    // Generate a random seed number
+    const randomSeed = Math.floor(Math.random() * 2147483647); // Max standard 32-bit int
+
+    // Build the prompt prefix
+    const promptPrefix = `cinematic video, style of ${styleConfig.name}, `;
+
+    // Build definitive Payload ready for AI render
+    const aiPayload = {
+      input_video: videoUrl,
+      prompt: `${promptPrefix}${randomBackground}, spoken: "${scriptText}"`,
+      seed: randomSeed,
+      status: "ready_for_render"
+    };
+
+    // Output definitive payload to console log simulating the AI API trigger
+    console.log("=== AI PAYLOAD READY FOR RENDER ===");
+    console.log(JSON.stringify({ target_api_payload_structure: aiPayload }, null, 2));
+    console.log("====================================");
+
+    // 5. Save final intake record in public.intakes for transactional security
     const { error: writeError } = await supabase.from("intakes").insert({
-      order_reference: parsed.data.order_reference,
-      customer_email: parsed.data.email,
-      style: parsed.data.style,
-      script: parsed.data.script,
-      training_video_path: storagePath,
-      training_video_bucket: bucket,
+      order_reference: sessionId,
+      customer_email: order.customer_email,
+      style: selectedStyle,
+      script: scriptText,
+      training_video_path: `${sessionId}/video.mp4`, // standardized path as requested
+      training_video_bucket: "raw-videos",
       status: "received"
     });
 
     if (writeError) {
-      // Clean up uploaded file if database entry fails
-      await supabase.storage.from(bucket).remove([storagePath]);
+      // Revert order status if writing intake fails
+      await supabase
+        .from("orders")
+        .update({ status: "paid", updated_at: new Date().toISOString() })
+        .eq("stripe_session_id", sessionId);
+
       return NextResponse.json(
-        { error: "Fallo al registrar los datos de producción en la base de datos." },
+        { error: "Fallo al registrar los datos de producción. Estado revertido." },
         { status: 500 }
       );
     }
@@ -199,7 +237,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: "Error interno del servidor al procesar el reel." },
+      { error: "Error interno del servidor al procesar los datos de producción." },
       { status: 500 }
     );
   }
