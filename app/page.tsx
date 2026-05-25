@@ -6,6 +6,7 @@ import {
   Play,
   ShieldCheck
 } from "lucide-react";
+import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { PricingCard } from "@/components/PricingCard";
 
 const process = [
@@ -115,18 +116,7 @@ export default function HomePage() {
       </section>
 
       <section className="demo shell" id="demo">
-        <div className="demo-media">
-          <Image
-            alt="Transformación de un vídeo base en una escena cinematográfica"
-            className="demo-image"
-            fill
-            sizes="(max-width: 900px) 100vw, 1200px"
-            src="/reeltwin-demo.png"
-          />
-          <span className="demo-before">Original</span>
-          <span className="demo-after">ReelTwin</span>
-          <span className="demo-divider" aria-hidden="true" />
-        </div>
+        <BeforeAfterSlider />
         <div className="demo-caption">
           <p>
             Mismo intérprete. Nuevo universo visual. Voz clonada y dirección
