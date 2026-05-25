@@ -74,6 +74,19 @@ set public = false,
     file_size_limit = 262144000,
     allowed_mime_types = array['video/mp4', 'video/quicktime', 'video/webm'];
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'completed-reels',
+  'completed-reels',
+  true,
+  262144000,
+  array['video/mp4', 'video/quicktime', 'video/webm']
+)
+on conflict (id) do update
+set public = true,
+    file_size_limit = 262144000,
+    allowed_mime_types = array['video/mp4', 'video/quicktime', 'video/webm'];
+
 create index if not exists orders_stripe_session_id_idx
 on public.orders (stripe_session_id);
 

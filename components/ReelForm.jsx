@@ -10,7 +10,8 @@ import {
   Film, 
   Video, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Download
 } from "lucide-react";
 import { CINEMATIC_STYLES } from "../config/styles";
 
@@ -24,6 +25,11 @@ export function ReelForm() {
   const [script, setScript] = useState("");
   const [videoFile, setVideoFile] = useState(null);
 
+  // Instant Gemini Omni states
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [finalVideo, setFinalVideo] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+
   // UI/Status states
   const [isValidatingOrder, setIsValidatingOrder] = useState(false);
   const [isOrderValid, setIsOrderValid] = useState(null);
@@ -31,11 +37,9 @@ export function ReelForm() {
 
   const [dragActive, setDragActive] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState(""); // Controlling "Cargando vídeo...", "Procesando..."
+  const [statusMessage, setStatusMessage] = useState(""); // Controlling "Cargando vídeo..."
   const [uploadProgress, setUploadProgress] = useState(0);
-  
   const [formError, setFormError] = useState(null);
-  const [formSuccess, setFormSuccess] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -101,6 +105,7 @@ export function ReelForm() {
 
   const validateAndSetFile = (file) => {
     setFormError(null);
+    setErrorMessage(null);
     const allowedTypes = ["video/mp4", "video/quicktime", "video/webm"];
     
     if (!allowedTypes.includes(file.type)) {
@@ -117,7 +122,7 @@ export function ReelForm() {
     setVideoFile(file);
   };
 
-  // Form submission
+  // Form submission with secure direct upload + síncrono Gemini processing
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isOrderValid) return;
@@ -132,6 +137,7 @@ export function ReelForm() {
 
     setIsSubmitting(true);
     setFormError(null);
+    setErrorMessage(null);
     setUploadProgress(0);
     setStatusMessage("Cargando vídeo..."); // Visual state: Loading video...
 
@@ -152,17 +158,18 @@ export function ReelForm() {
         if (event.lengthComputable) {
           const percent = Math.round((event.loaded / event.total) * 100);
           setUploadProgress(percent);
-          if (percent === 100) {
-            setStatusMessage("Procesando..."); // Visual state: Processing...
-          }
         }
       });
 
       xhr.addEventListener("load", async () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          // Upload successful! Proceed to Step 3: POST JSON metadata to process-reel
+          // Upload successful! Turn off isSubmitting, turn on isProcessing for Gemini Omni síncrono phase
+          setIsSubmitting(false);
+          setIsProcessing(true);
+
           try {
-            const apiResponse = await fetch("/api/process-reel", {
+            // 3. POST JSON metadata to the instant processing API route
+            const apiResponse = await fetch("/api/process-instant", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json"
@@ -178,23 +185,23 @@ export function ReelForm() {
             const apiData = await apiResponse.json();
 
             if (apiResponse.ok && apiData.success) {
-              setFormSuccess(true);
+              setFinalVideo(apiData.finalVideoUrl);
             } else {
-              setFormError(apiData.error || "Ocurrió un error al registrar los datos de producción.");
-              setIsSubmitting(false);
+              setErrorMessage(apiData.error || "Ocurrió un error al procesar tu escena instantánea.");
             }
           } catch (apiErr) {
-            setFormError("Fallo al contactar con la API del servidor.");
-            setIsSubmitting(false);
+            setErrorMessage("Error de conexión con la API del servidor.");
+          } finally {
+            setIsProcessing(false);
           }
         } else {
-          setFormError("Fallo al subir el archivo de vídeo al almacenamiento seguro de Supabase.");
+          setFormError("Fallo al subir el archivo de vídeo al almacenamiento seguro.");
           setIsSubmitting(false);
         }
       });
 
       xhr.addEventListener("error", () => {
-        setFormError("Error de red durante la subida directa del vídeo.");
+        setFormError("Error de red durante la transferencia del archivo.");
         setIsSubmitting(false);
       });
 
@@ -232,22 +239,46 @@ export function ReelForm() {
     );
   }
 
-  if (formSuccess) {
+  // Visual Loading State: Gemini Omni síncrono processing
+  if (isProcessing) {
     return (
-      <div className="rounded-2xl border border-green-500/20 bg-slate-900 p-8 text-center text-white md:p-12 shadow-2xl">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10 text-green-500 shadow-lg shadow-green-500/10">
-          <CheckCircle2 className="h-9 w-9" />
-        </div>
-        <h3 className="mt-6 text-2xl font-bold">¡Éxito! Tu reel estará listo en 24h.</h3>
-        <p className="mt-3 text-sm text-slate-400 max-w-sm mx-auto">
-          Hemos recibido tu material y nuestro motor de inteligencia artificial ya está procesando tu gemelo digital.
+      <div className="flex min-h-[400px] flex-col items-center justify-center rounded-2xl bg-slate-950 p-8 text-center text-white border border-slate-850 shadow-2xl animate-pulse">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-6" />
+        <h3 className="text-xl font-bold mb-3">Esculpiendo tu escena...</h3>
+        <p className="text-sm text-slate-400 max-w-md leading-relaxed">
+          Gemini Omni está esculpiendo tu escena cinematográfica. Esto tomará unos 30 segundos... No cierres esta pestaña.
         </p>
-        <div className="mt-8">
+      </div>
+    );
+  }
+
+  // Visual Success State: Final Video Rendered & Downloadable
+  if (finalVideo) {
+    return (
+      <div className="rounded-2xl border border-blue-500/20 bg-slate-900 p-6 text-center text-white md:p-9 shadow-2xl">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/10 text-blue-500 mb-6">
+          <CheckCircle2 className="h-7 w-7" />
+        </div>
+        <h3 className="text-2xl font-bold mb-6">¡Éxito! Tu reel está listo.</h3>
+        
+        <div className="relative overflow-hidden rounded-xl border border-blue-500 shadow-xl max-w-lg mx-auto bg-black">
+          <video 
+            controls 
+            className="w-full h-auto aspect-video" 
+            src={finalVideo}
+          />
+        </div>
+        
+        <div className="mt-8 flex justify-center">
           <a
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition"
+            href={finalVideo}
+            download="completed-reel.mp4"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 px-8 py-4 text-lg font-bold text-white transition-all duration-200 shadow-lg hover:shadow-blue-500/20 active:translate-y-0.5"
           >
-            Volver a inicio
+            <Download className="h-5 w-5" />
+            Descargar vídeo
           </a>
         </div>
       </div>
@@ -263,8 +294,18 @@ export function ReelForm() {
         <div className="flex items-start gap-3 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-white">
           <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold">Error de envío: </span>
+            <span className="font-bold">Error de subida: </span>
             {formError}
+          </div>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="flex items-start gap-3 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-white">
+          <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold">Error de proceso: </span>
+            {errorMessage}
           </div>
         </div>
       )}
