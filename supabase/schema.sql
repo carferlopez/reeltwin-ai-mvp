@@ -19,6 +19,7 @@ create table if not exists public.intakes (
   id uuid primary key default gen_random_uuid(),
   order_reference text,
   customer_email text not null,
+  style text not null default 'nordic-noir',
   script text not null,
   training_video_bucket text not null default 'training-videos',
   training_video_path text,

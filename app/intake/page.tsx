@@ -1,4 +1,4 @@
-import { Upload } from "lucide-react";
+import { ReelForm } from "@/components/ReelForm";
 
 export default async function IntakePage({
   searchParams
@@ -25,49 +25,9 @@ export default async function IntakePage({
           plazo de custodia tras la entrega.
         </p>
 
-        <form
-          action="/api/intake"
-          className="mt-12 space-y-7 rounded-lg border border-white/10 bg-steel p-6 md:p-9"
-          encType="multipart/form-data"
-          method="post"
-        >
-          <input name="order_reference" type="hidden" value={orderReference} />
-          <label className="block">
-            <span className="text-sm font-semibold text-zinc-200">Email</span>
-            <input
-              className="mt-3 min-h-14 w-full rounded-md border border-white/15 bg-ink px-4 text-white outline-none transition focus:border-signal"
-              name="email"
-              required
-              type="email"
-            />
-          </label>
-          <label className="block">
-            <span className="text-sm font-semibold text-zinc-200">
-              Vídeo base
-            </span>
-            <input
-              accept="video/mp4,video/quicktime,video/webm"
-              className="mt-3 w-full rounded-md border border-white/15 bg-ink p-4 text-sm text-white file:mr-4 file:rounded-full file:border-0 file:bg-signal file:px-5 file:py-2 file:font-semibold file:text-ink"
-              name="training_video"
-              required
-              type="file"
-            />
-          </label>
-          <label className="block">
-            <span className="text-sm font-semibold text-zinc-200">Guion</span>
-            <textarea
-              className="mt-3 min-h-40 w-full rounded-md border border-white/15 bg-ink p-4 text-white outline-none transition focus:border-signal"
-              maxLength={1200}
-              name="script"
-              placeholder="Escena, tono, frase exacta y cualquier indicación visual."
-              required
-            />
-          </label>
-          <button className="flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-signal px-5 text-base font-bold text-ink transition hover:bg-white">
-            Enviar material
-            <Upload className="h-5 w-5" />
-          </button>
-        </form>
+        <div className="mt-12">
+          <ReelForm initialOrderReference={orderReference} />
+        </div>
       </div>
     </main>
   );
