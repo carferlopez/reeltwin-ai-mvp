@@ -1,15 +1,15 @@
 import Image from "next/image";
-import { ArrowRight, Building2, GraduationCap, LockKeyhole, Megaphone, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, Building2, GraduationCap, LockKeyhole, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import { ContactForm } from "@/components/ContactForm";
 
 const steps = [
   {
     title: "Brief",
-    text: "Nos cuentas el proyecto: portavoz, tono, guion y objetivos de marca. Nosotros hacemos las preguntas correctas."
+    text: "Nos cuentas el proyecto: qué necesitas, para qué canal y qué quieres transmitir. Nosotros hacemos las preguntas correctas."
   },
   {
     title: "Producimos",
-    text: "Aplicamos dirección creativa y las mejores herramientas de IA para generar clips que cumplen tus brand guidelines."
+    text: "Aplicamos dirección creativa y las mejores herramientas de IA para generar imágenes y video que cumplen tus brand guidelines."
   },
   {
     title: "Apruebas",
@@ -19,19 +19,22 @@ const steps = [
 
 const cases = [
   {
-    icon: Megaphone,
-    title: "Agencias de marketing",
-    text: "Ofrece producción de video con IA a tus clientes sin montar un equipo propio. Más margen, más velocidad de entrega."
+    icon: Building2,
+    title: "Inmobiliarias",
+    text: "Cada inmueble merece imágenes que vendan antes de que exista. Home staging virtual, renders fotorrealistas y video tour sin fotógrafo ni decorador.",
+    tags: ["Imagen", "Video"]
+  },
+  {
+    icon: ShoppingBag,
+    title: "Tiendas online",
+    text: "Fotos de producto y vídeos demo para cada SKU, campaña y temporada. El contenido visual que aumenta la conversión, sin sesión fotográfica.",
+    tags: ["Imagen", "Video"]
   },
   {
     icon: GraduationCap,
-    title: "Formación online",
-    text: "Actualiza o amplía cursos sin re-grabar al instructor. El contenido escala; la grabación no tiene que hacerlo."
-  },
-  {
-    icon: Building2,
-    title: "Marcas corporativas",
-    text: "Tu portavoz en video para cualquier mercado, campaña o idioma. Sin depender de su disponibilidad."
+    title: "Formación corporativa",
+    text: "Actualiza cursos y módulos de onboarding sin re-grabar al instructor. El presentador siempre disponible, en cualquier idioma.",
+    tags: ["Video"]
   }
 ];
 
@@ -81,15 +84,15 @@ export default function HomePage() {
         </header>
 
         <div className="hero-copy shell">
-          <p className="eyebrow">Video con IA para empresas</p>
+          <p className="eyebrow">Imagen y video con IA para empresas</p>
           <h1>
-            Tu portavoz en video.
-            <em>Sin grabar.</em>
+            Contenido visual
+            <em>sin sesión.</em>
           </h1>
           <p className="hero-description">
-            Producimos clips de alta calidad con el gemelo digital de tu portavoz,
-            guiados por dirección creativa. Tú apruebas. Nosotros entregamos.
-            Sin estudio, sin agenda, sin fricción.
+            Producimos imagen y video de alta calidad con IA, guiados por dirección creativa.
+            Sin fotógrafo, sin estudio, sin esperar agenda.
+            Tú apruebas. Nosotros entregamos.
           </p>
           <div className="hero-actions">
             <a className="button-primary" href="#contacto">
@@ -101,16 +104,16 @@ export default function HomePage() {
 
         <div className="hero-stats shell" aria-label="Características principales">
           <div>
+            <strong>Imagen y video</strong>
+            <span>Un único proveedor</span>
+          </div>
+          <div>
             <strong>Brief a entrega</strong>
-            <span>En días, no meses</span>
+            <span>En días, no semanas</span>
           </div>
           <div>
-            <strong>Sin equipo propio</strong>
-            <span>Producción externalizada</span>
-          </div>
-          <div>
-            <strong>Brand guidelines</strong>
-            <span>Aplicados en cada clip</span>
+            <strong>Sin estudio</strong>
+            <span>Sin fotógrafo, sin agenda</span>
           </div>
         </div>
       </section>
@@ -118,9 +121,9 @@ export default function HomePage() {
       <section className="statement shell">
         <p className="eyebrow">El problema</p>
         <h2>
-          El video escala.
+          El contenido visual escala.
           <br />
-          La grabación, no.
+          La sesión fotográfica, no.
         </h2>
       </section>
 
@@ -149,9 +152,16 @@ export default function HomePage() {
             <h2>Tres tipos de cliente. Un mismo problema.</h2>
           </div>
           <div className="cases-grid">
-            {cases.map(({ icon: Icon, title, text }) => (
+            {cases.map(({ icon: Icon, title, text, tags }) => (
               <article className="case-card" key={title}>
-                <Icon />
+                <div className="case-top">
+                  <Icon />
+                  <div className="case-tags">
+                    {tags.map(tag => (
+                      <span className="case-tag" key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
                 <h3>{title}</h3>
                 <p>{text}</p>
               </article>

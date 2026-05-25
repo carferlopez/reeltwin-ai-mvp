@@ -14,9 +14,9 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "ReelTwin.ai | Producción de video con IA para empresas",
+  title: "ReelTwin.ai | Imagen y video con IA para empresas",
   description:
-    "Producimos clips con el gemelo digital de tu portavoz, guiados por dirección creativa. Brief, producción y entrega. Sin estudio, sin agenda.",
+    "Producimos imagen y video con IA para inmobiliarias, tiendas online y formación corporativa. Sin fotógrafo, sin estudio, sin esperar agenda.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000")
 };
 

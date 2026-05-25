@@ -484,6 +484,29 @@ textarea {
   background: var(--surface);
 }
 
+.case-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.case-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.case-tag {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .case-card svg {
   height: 24px;
   width: 24px;
