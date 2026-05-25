@@ -10,6 +10,7 @@ coverage/
 screenshots/
 .vercel
 .env*
+tsconfig.tsbuildinfo
 
 # Sandbox local
 scratch/

@@ -1,15 +1,19 @@
 import Image from "next/image";
 import {
   ArrowRight,
+  Building2,
   Clock3,
+  GraduationCap,
   LockKeyhole,
   Play,
-  ShieldCheck
+  ShieldCheck,
+  ShoppingBag
 } from "lucide-react";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { PricingCard } from "@/components/PricingCard";
+import { ContactForm } from "@/components/ContactForm";
 
-const process = [
+const steps = [
   {
     title: "Elige tu formato",
     text: "Foto o vídeo: selecciona el pack adecuado y paga al instante con Stripe."
@@ -48,6 +52,27 @@ const sectors = [
   }
 ];
 
+const cases = [
+  {
+    icon: Building2,
+    title: "Inmobiliarias",
+    text: "Cada inmueble merece imágenes que vendan antes de que exista. Home staging virtual, renders fotorrealistas y video tour sin fotógrafo ni decorador.",
+    tags: ["Imagen", "Video"]
+  },
+  {
+    icon: ShoppingBag,
+    title: "Tiendas online",
+    text: "Fotos de producto y vídeos demo para cada SKU, campaña y temporada. El contenido visual que aumenta la conversión, sin sesión fotográfica.",
+    tags: ["Imagen", "Video"]
+  },
+  {
+    icon: GraduationCap,
+    title: "Formación corporativa",
+    text: "Actualiza cursos y módulos de onboarding sin re-grabar al instructor. El presentador siempre disponible, en cualquier idioma.",
+    tags: ["Video"]
+  }
+];
+
 const assurances = [
   {
     icon: ShieldCheck,
@@ -57,12 +82,12 @@ const assurances = [
   {
     icon: LockKeyhole,
     title: "Material privado",
-    text: "Tus vídeos permanecen en almacenamiento privado y controlado."
+    text: "Tus archivos permanecen en almacenamiento privado y controlado."
   },
   {
     icon: Clock3,
     title: "Borrado programado",
-    text: "El vídeo de entrenamiento se elimina tras la entrega."
+    text: "El material de trabajo se elimina automáticamente tras la entrega."
   }
 ];
 
@@ -92,8 +117,8 @@ export default function HomePage() {
           <nav className="nav" aria-label="Principal">
             <a href="#como-funciona">Proceso</a>
             <a href="#pricing">Precios</a>
-            <a className="nav-action" href="#pricing">
-              Crear clip
+            <a className="nav-action" href="#contacto">
+              Hablemos
             </a>
           </nav>
         </header>
@@ -126,22 +151,22 @@ export default function HomePage() {
             <span>Contenido dual</span>
           </div>
           <div>
-            <strong>24 horas</strong>
-            <span>Entrega</span>
+            <strong>Brief a entrega</strong>
+            <span>En días, no semanas</span>
           </div>
           <div>
-            <strong>Sin rodaje</strong>
-            <span>Solo tu material base</span>
+            <strong>Sin estudio</strong>
+            <span>Sin fotógrafo, sin agenda</span>
           </div>
         </div>
       </section>
 
       <section className="statement shell">
-        <p className="eyebrow">Tu próximo proyecto</p>
+        <p className="eyebrow">El problema</p>
         <h2>
-          La IA no te sustituye.
+          El contenido visual escala.
           <br />
-          Te multiplica.
+          La sesión fotográfica, no.
         </h2>
       </section>
 
@@ -184,11 +209,36 @@ export default function HomePage() {
             <h2>Tres pasos, sin fricción.</h2>
           </div>
           <div className="steps">
-            {process.map((step, index) => (
+            {steps.map((step, index) => (
               <article className="step" key={step.title}>
                 <span>0{index + 1}</span>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="cases" id="casos">
+        <div className="shell">
+          <div className="section-heading">
+            <p className="eyebrow">Casos de uso</p>
+            <h2>Tres tipos de cliente. Un mismo problema.</h2>
+          </div>
+          <div className="cases-grid">
+            {cases.map(({ icon: Icon, title, text, tags }) => (
+              <article className="case-card" key={title}>
+                <div className="case-top">
+                  <Icon />
+                  <div className="case-tags">
+                    {tags.map(tag => (
+                      <span className="case-tag" key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <h3>{title}</h3>
+                <p>{text}</p>
               </article>
             ))}
           </div>
@@ -225,16 +275,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="closing shell">
-        <h2>
-          Tu próximo proyecto
-          <br />
-          empieza aquí.
-        </h2>
-        <a className="button-primary" href="#pricing">
-          Elegir pack
-          <ArrowRight />
-        </a>
+      <section className="contact shell" id="contacto">
+        <div className="contact-layout">
+          <div className="contact-intro">
+            <p className="eyebrow">Proyectos a medida</p>
+            <h2>
+              Cuéntanos
+              <br />
+              tu proyecto.
+            </h2>
+            <p>
+              Para proyectos mayores o necesidades específicas. Revisamos tu caso
+              y respondemos en menos de 24 horas con una propuesta concreta.
+            </p>
+          </div>
+          <ContactForm />
+        </div>
       </section>
 
       <footer className="footer shell">
@@ -242,7 +298,7 @@ export default function HomePage() {
           ReelTwin<span>.ai</span>
         </span>
         <div className="footer-info">
-          <span>Clips cinematográficos con gemelos digitales</span>
+          <span>Producción de imagen y vídeo con IA para empresas</span>
           <span>© Carlos Makes, 2026</span>
         </div>
         <span>Entrega en 24h</span>
