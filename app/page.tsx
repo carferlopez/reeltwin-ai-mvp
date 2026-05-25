@@ -122,7 +122,6 @@ export default function HomePage() {
             Mismo intérprete. Nuevo universo visual. Voz clonada y dirección
             cinematográfica en una pieza preparada para publicar.
           </p>
-          <span>Antes / Después</span>
         </div>
       </section>
 
