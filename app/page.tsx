@@ -195,33 +195,6 @@ export default function HomePage() {
         </p>
       </section>
 
-      <section className="pro-banner" id="profesionales">
-        <div className="shell pro-banner-inner">
-          <div className="pro-banner-content">
-            <p className="eyebrow pro-eyebrow">Para profesionales del sector</p>
-            <h2>
-              ¿Fotógrafo, videógrafo<br />
-              o tienes una productora?
-            </h2>
-            <p className="pro-desc">
-              No venimos a quitarte el trabajo. Venimos a multiplicarlo.
-              Una sesión tuya puede convertirse en diez veces más variaciones
-              para tu cliente — sin volver al estudio.
-            </p>
-          </div>
-          <div className="pro-banner-cta">
-            <ul className="pro-list">
-              <li>Una sesión → decenas de variaciones para tu cliente</li>
-              <li>Ofrece más entregables sin más días de rodaje</li>
-              <li>Cuando estás lleno, no digas que no a un cliente</li>
-            </ul>
-            <a className="button-primary" href="#contacto">
-              Hablemos
-              <ArrowRight />
-            </a>
-          </div>
-        </div>
-      </section>
 
       <section className="pricing shell" id="pricing">
         <div className="section-heading pricing-heading">
