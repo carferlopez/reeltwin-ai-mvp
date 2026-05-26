@@ -542,32 +542,27 @@ textarea {
 }
 
 .pricing-card {
-  display: flex;
-  flex-direction: column;
-  min-height: 480px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  padding: 38px;
+  background: #12161a;
+  border: 1px solid #20262c;
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  position: relative;
 }
 
 .pricing-card--featured {
-  border-color: rgba(215, 255, 84, 0.48);
-  background: var(--surface-raised);
+  border-color: #d7ff54;
 }
 
 .pricing-badge {
-  display: inline-block;
-  align-self: start;
-  margin-bottom: 20px;
-  border: 1px solid rgba(215, 255, 84, 0.5);
+  position: absolute;
+  top: -0.75rem;
+  left: 1.5rem;
+  background: #d7ff54;
+  color: #08090b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  padding: 6px 14px;
-  color: var(--accent);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 .pricing-card h3 {
@@ -577,43 +572,29 @@ textarea {
 }
 
 .pricing-price {
-  margin: 28px 0 0;
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 4rem;
-  line-height: 1;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0.5rem 0 1.25rem;
 }
 
 .pricing-price span {
-  font-family: var(--font-sans), Arial, sans-serif;
   font-size: 1rem;
+  color: #9aa3ad;
   font-weight: 400;
-  color: var(--muted);
-  margin-left: 2px;
 }
 
 .pricing-card ul {
-  display: grid;
-  gap: 13px;
-  margin: 28px 0 0;
-  padding: 0;
   list-style: none;
-  color: #cfd2d0;
-  font-size: 0.94rem;
+  padding: 0;
+  margin: 0 0 1.5rem;
 }
 
 .pricing-card li {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.pricing-card li::before {
-  content: '';
-  flex: none;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--cyan);
+  color: #9aa3ad;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #20262c;
+  font-size: 0.95rem;
 }
 
 .cta-primary {
@@ -901,8 +882,9 @@ textarea {
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-top: 2.5rem;
 }
 
 .price-card {
