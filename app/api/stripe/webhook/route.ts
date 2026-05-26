@@ -1,12 +1,103 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { Resend } from "resend";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { createStripeClient } from "@/lib/stripe";
 import { requiredEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 
+const QUOTA_BY_TIER = { pro: 20, studio: 60 } as const;
+
+// ─── Email template ───────────────────────────────────────────────────────────
+function buildWelcomeEmail(tier: string, quota: number, magicLink: string): string {
+  const tierLabel = tier === "studio" ? "Studio" : "Pro";
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tu Studio está listo</title>
+</head>
+<body style="margin:0;padding:0;background:#08090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#08090b;padding:48px 24px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+          <!-- Logo -->
+          <tr>
+            <td style="padding-bottom:40px;">
+              <span style="font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:-0.02em;">
+                ReelTwin<span style="color:#d7ff54;">.ai</span>
+              </span>
+            </td>
+          </tr>
+
+          <!-- Headline -->
+          <tr>
+            <td style="padding-bottom:12px;">
+              <h1 style="margin:0;font-size:2rem;font-weight:700;color:#fff;line-height:1.15;">
+                Tu Studio está listo.
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Subtext -->
+          <tr>
+            <td style="padding-bottom:32px;">
+              <p style="margin:0;font-size:1.05rem;color:#9aa3ad;line-height:1.6;">
+                Tu suscripción <strong style="color:#fff;">${tierLabel}</strong> está activa.<br/>
+                Tienes <strong style="color:#d7ff54;">${quota} generaciones</strong> este mes a tu disposición.
+              </p>
+            </td>
+          </tr>
+
+          <!-- CTA button -->
+          <tr>
+            <td style="padding-bottom:40px;">
+              <a href="${magicLink}"
+                 style="display:inline-block;background:#d7ff54;color:#08090b;font-size:1rem;
+                        font-weight:700;text-decoration:none;padding:16px 36px;
+                        border-radius:999px;letter-spacing:-0.01em;">
+                Entrar a mi Studio →
+              </a>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="border-top:1px solid #20262c;padding-top:28px;padding-bottom:8px;">
+              <p style="margin:0;font-size:0.85rem;color:#4a5260;line-height:1.6;">
+                El enlace es de un solo uso y expira en 24h. Si caduca, visita
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL}/login"
+                   style="color:#9aa3ad;text-decoration:underline;">
+                  reeltwin.ai/login
+                </a>
+                y te enviamos uno nuevo al instante.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:20px;">
+              <p style="margin:0;font-size:0.8rem;color:#2e343b;">
+                © ReelTwin.ai · Carlos Makes, 2026
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+// ─── Webhook handler ──────────────────────────────────────────────────────────
 export async function POST(request: Request) {
   const body = await request.text();
   const signature = (await headers()).get("stripe-signature");
@@ -15,9 +106,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
   }
 
+  const stripe = createStripeClient();
   let event: Stripe.Event;
+
   try {
-    event = createStripeClient().webhooks.constructEvent(
+    event = stripe.webhooks.constructEvent(
       body,
       signature,
       requiredEnv("STRIPE_WEBHOOK_SECRET")
@@ -26,10 +119,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid Stripe signature" }, { status: 400 });
   }
 
+  const supabase = createSupabaseAdmin();
+
+  // ── Legacy: one-off checkout sessions ────────────────────────────────────
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const supabase = createSupabaseAdmin();
-
     const packageId = session.metadata?.package_id ?? "unknown";
     const customerEmail =
       session.customer_details?.email ?? session.customer_email ?? "unknown";
@@ -43,13 +137,116 @@ export async function POST(request: Request) {
         currency: session.currency ?? "eur",
         payment_status: session.payment_status,
         status: "paid",
-        paid_at: new Date().toISOString()
+        paid_at: new Date().toISOString(),
       },
       { onConflict: "stripe_session_id" }
     );
-
     if (error) {
       return NextResponse.json({ error: "Order write failed" }, { status: 500 });
+    }
+  }
+
+  // ── Subscription created ──────────────────────────────────────────────────
+  if (event.type === "customer.subscription.created") {
+    const subscription = event.data.object as Stripe.Subscription;
+
+    const customer = await stripe.customers.retrieve(subscription.customer as string);
+    const email = (customer as Stripe.Customer).email!;
+
+    const tier = subscription.items.data[0].price.lookup_key as "pro" | "studio";
+    const quota = QUOTA_BY_TIER[tier] ?? 20;
+
+    // Upsert subscription row
+    const { error: subErr } = await supabase.from("subscriptions").upsert(
+      {
+        stripe_subscription_id: subscription.id,
+        customer_email: email,
+        tier,
+        status: "active",
+        quota_total: quota,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      },
+      { onConflict: "stripe_subscription_id" }
+    );
+
+    if (subErr) {
+      console.error("[webhook] subscription upsert failed:", subErr);
+      return NextResponse.json({ error: "Subscription write failed" }, { status: 500 });
+    }
+
+    // Generate magic link (does NOT send email — we handle that via Resend)
+    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/studio` },
+    });
+
+    if (linkErr || !linkData?.properties?.action_link) {
+      console.error("[webhook] magic link generation failed:", linkErr);
+      return NextResponse.json({ error: "Magic link failed" }, { status: 500 });
+    }
+
+    const magicLink = linkData.properties.action_link;
+
+    // Send branded welcome email via Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const { error: emailErr } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL!,
+      to: email,
+      subject: `Tu Studio ReelTwin está listo — ${quota} generaciones te esperan`,
+      html: buildWelcomeEmail(tier, quota, magicLink),
+    });
+
+    if (emailErr) {
+      // Non-fatal: subscription is written, just log the email failure
+      console.error("[webhook] welcome email failed:", emailErr);
+    }
+  }
+
+  // ── Subscription updated ──────────────────────────────────────────────────
+  if (event.type === "customer.subscription.updated") {
+    const subscription = event.data.object as Stripe.Subscription;
+    const tier = subscription.items.data[0].price.lookup_key as "pro" | "studio";
+    const quota = QUOTA_BY_TIER[tier] ?? 20;
+
+    const statusMap: Record<string, string> = {
+      active: "active",
+      past_due: "past_due",
+      canceled: "canceled",
+      unpaid: "past_due",
+      trialing: "active",
+    };
+
+    const { error } = await supabase
+      .from("subscriptions")
+      .update({
+        tier,
+        status: statusMap[subscription.status] ?? "active",
+        quota_total: quota,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      })
+      .eq("stripe_subscription_id", subscription.id);
+
+    if (error) {
+      console.error("[webhook] subscription update failed:", error);
+      return NextResponse.json({ error: "Subscription update failed" }, { status: 500 });
+    }
+  }
+
+  // ── Subscription deleted ──────────────────────────────────────────────────
+  if (event.type === "customer.subscription.deleted") {
+    const subscription = event.data.object as Stripe.Subscription;
+
+    const { error } = await supabase
+      .from("subscriptions")
+      .update({ status: "canceled" })
+      .eq("stripe_subscription_id", subscription.id);
+
+    if (error) {
+      console.error("[webhook] subscription cancel failed:", error);
+      return NextResponse.json({ error: "Subscription cancel failed" }, { status: 500 });
     }
   }
 
