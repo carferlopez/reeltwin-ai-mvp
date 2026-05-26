@@ -2,7 +2,11 @@ import { fal } from '@fal-ai/client';
 import { CINEMATIC_STYLES } from '@/config/styles';
 import type { VariationRequest, VariationResult } from '../imageVariations';
 
-fal.config({ credentials: process.env.FAL_KEY });
+// Lazy config — avoids module-level side effects during Vercel static analysis
+function getFalClient() {
+  fal.config({ credentials: process.env.FAL_KEY });
+  return fal;
+}
 
 // fal-ai/flux/dev/image-to-image — image-to-image model (accepts image_url + strength).
 // Swap to fal-ai/flux-kontext/pro for stronger subject preservation once you
@@ -27,10 +31,12 @@ export async function generateWithFalFlux(
 
   const start = Date.now();
 
+  const client = getFalClient();
+
   // Model doesn't support num_images > 1 natively — parallelise N calls
   const results = await Promise.all(
     Array.from({ length: req.count }, () =>
-      fal.subscribe(MODEL_ID, {
+      client.subscribe(MODEL_ID, {
         input: {
           prompt,
           image_url: req.sourceImageUrl,
