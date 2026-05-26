@@ -1,40 +1,33 @@
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { getStripeLink, packages, type PackageId } from "@/lib/pricing";
+import { getSubscriptionLink, plans, type PlanId } from "@/lib/pricing";
 
 type PricingCardProps = {
-  packageId: PackageId;
+  planId: PlanId;
   featured?: boolean;
 };
 
-export function PricingCard({ packageId, featured = false }: PricingCardProps) {
-  const pack = packages[packageId];
+export function PricingCard({ planId, featured = false }: PricingCardProps) {
+  const plan = plans[planId];
 
   return (
-    <article className={`price-card${featured ? " featured" : ""}`}>
-      <div className="price-top">
-        <div>
-          <span className="price-label">Pack</span>
-          <h3>{pack.name}</h3>
-        </div>
-        {featured ? <span className="recommendation">Más completo</span> : null}
-      </div>
-
-      <p className="amount">{pack.price}</p>
-      <p className="delivery">{pack.delivery}</p>
-
+    <article className={`pricing-card${featured ? " pricing-card--featured" : ""}`}>
+      {featured && <span className="pricing-badge">Más popular</span>}
+      <h3>{plan.name}</h3>
+      <p className="pricing-price">
+        {plan.price}<span>/{plan.period}</span>
+      </p>
       <ul>
-        {pack.items.map((item) => (
-          <li key={item}>
-            <Check />
-            {item}
-          </li>
+        {plan.items.map((item) => (
+          <li key={item}>{item}</li>
         ))}
       </ul>
-
-      <Link className="price-button" href={getStripeLink(packageId)}>
-        {pack.cta}
-        <ArrowRight />
+      <Link
+        className={featured ? "cta-primary" : "cta-secondary"}
+        href={getSubscriptionLink(planId)}
+      >
+        {plan.cta}
+        <ArrowRight size={16} />
       </Link>
     </article>
   );

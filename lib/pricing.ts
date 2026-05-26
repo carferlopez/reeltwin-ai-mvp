@@ -1,52 +1,53 @@
-export type PackageId = "foto" | "monologo" | "showcase";
+export type PlanId = "free" | "pro" | "studio";
 
-export const packages = {
-  foto: {
-    id: "foto",
-    name: "Sesión Foto",
+export const plans = {
+  free: {
+    id: "free",
+    name: "Free",
+    price: "0 €",
+    numericPrice: 0,
+    period: "mes",
+    items: [
+      "1 generación al mes",
+      "Con marca de agua",
+      "Para probar el resultado"
+    ],
+    cta: "Empezar gratis",
+    stripeLink: null
+  },
+  pro: {
+    id: "pro",
+    name: "Pro",
+    price: "19 €",
+    numericPrice: 19,
+    period: "mes",
+    items: [
+      "20 generaciones al mes",
+      "Sin marca de agua",
+      "Alta resolución",
+      "Cancela cuando quieras"
+    ],
+    cta: "Suscribirme",
+    stripeEnvKey: "NEXT_PUBLIC_STRIPE_PRO_LINK"
+  },
+  studio: {
+    id: "studio",
+    name: "Studio",
     price: "49 €",
     numericPrice: 49,
-    delivery: "3 imágenes editoriales",
+    period: "mes",
     items: [
-      "Generado desde tu producto, render o foto base",
-      "Cualquier escenario, textura o ambiente",
-      "Archivos en alta resolución listos para publicar"
+      "60 generaciones al mes",
+      "Cola prioritaria",
+      "Acceso anticipado a nuevos estilos"
     ],
-    cta: "Solicitar",
-    stripeEnvKey: "NEXT_PUBLIC_STRIPE_FOTO_LINK"
-  },
-  monologo: {
-    id: "monologo",
-    name: "El Monólogo",
-    price: "29 €",
-    numericPrice: 29,
-    delivery: "1 clip de vídeo 10s",
-    items: [
-      "Gemelo digital generado desde tu vídeo base",
-      "Fondo cinematográfico y voz clonada",
-      "Clip final enviado por email en 24h"
-    ],
-    cta: "Elegir pack",
-    stripeEnvKey: "NEXT_PUBLIC_STRIPE_MONOLOGO_LINK"
-  },
-  showcase: {
-    id: "showcase",
-    name: "El Showcase",
-    price: "79 €",
-    numericPrice: 79,
-    delivery: "3 clips de vídeo 10s",
-    items: [
-      "Gemelo digital generado desde tu vídeo base",
-      "Drama, acción y comedia con fondos hiperrealistas",
-      "3 clips distintos enviados por email en 24h"
-    ],
-    cta: "Elegir pack",
-    stripeEnvKey: "NEXT_PUBLIC_STRIPE_SHOWCASE_LINK"
+    cta: "Suscribirme",
+    stripeEnvKey: "NEXT_PUBLIC_STRIPE_STUDIO_LINK"
   }
 } as const;
 
-export function getStripeLink(packageId: PackageId) {
-  const pkg = packages[packageId];
-  if (packageId === "foto") return "#pricing";
-  return process.env[pkg.stripeEnvKey] ?? "#pricing";
+export function getSubscriptionLink(planId: PlanId): string {
+  if (planId === "free") return "#start";
+  const plan = plans[planId];
+  return process.env[plan.stripeEnvKey] ?? "#pricing";
 }

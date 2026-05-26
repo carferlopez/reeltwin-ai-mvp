@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
-import { getStripeLink, type PackageId } from "@/lib/pricing";
+import { getSubscriptionLink, type PlanId } from "@/lib/pricing";
 
 export default async function CheckoutPage({
   searchParams
 }: {
-  searchParams: Promise<{ pack?: PackageId }>;
+  searchParams: Promise<{ plan?: PlanId }>;
 }) {
   const params = await searchParams;
-  const pack = params.pack === "showcase" ? "showcase" : "monologo";
-  redirect(getStripeLink(pack));
+  const plan = params.plan === "studio" ? "studio" : "pro";
+  redirect(getSubscriptionLink(plan));
 }
