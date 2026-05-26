@@ -1,13 +1,8 @@
 import Image from "next/image";
 import {
-  ArrowRight,
-  Building2,
   Clock3,
-  GraduationCap,
   LockKeyhole,
-  Play,
-  ShieldCheck,
-  ShoppingBag
+  ShieldCheck
 } from "lucide-react";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { PricingCard } from "@/components/PricingCard";
@@ -25,51 +20,6 @@ const steps = [
   {
     title: "Recibe el resultado",
     text: "Entregamos las piezas listas para publicar directamente en tu email en menos de 24h."
-  }
-];
-
-const sectors = [
-  {
-    number: "01",
-    title: "Producto",
-    subtitle: "E-commerce y retail",
-    description: "Genera decenas de fotos de producto en escenarios, texturas y ambientes diferentes. Sin organizar otra sesión de fotos.",
-    tags: ["Foto", "Vídeo"]
-  },
-  {
-    number: "02",
-    title: "Espacio",
-    subtitle: "Arquitectura e interiorismo",
-    description: "Transforma renders vacíos en espacios habitados. Añade personas y atmósferas que venden el proyecto antes de construirlo.",
-    tags: ["Foto", "Render"]
-  },
-  {
-    number: "03",
-    title: "Formador",
-    subtitle: "E-learning y cursos online",
-    description: "Graba tu gemelo digital en múltiples escenas y estilos desde un único vídeo base. Contenido para meses en una tarde.",
-    tags: ["Vídeo", "Clip"]
-  }
-];
-
-const cases = [
-  {
-    icon: Building2,
-    title: "Inmobiliarias",
-    text: "Cada inmueble merece imágenes que vendan antes de que exista. Home staging virtual, renders fotorrealistas y video tour sin fotógrafo ni decorador.",
-    tags: ["Imagen", "Video"]
-  },
-  {
-    icon: ShoppingBag,
-    title: "Tiendas online",
-    text: "Fotos de producto y vídeos demo para cada SKU, campaña y temporada. El contenido visual que aumenta la conversión, sin sesión fotográfica.",
-    tags: ["Imagen", "Video"]
-  },
-  {
-    icon: GraduationCap,
-    title: "Formación corporativa",
-    text: "Actualiza cursos y módulos de onboarding sin re-grabar al instructor. El presentador siempre disponible, en cualquier idioma.",
-    tags: ["Video"]
   }
 ];
 
@@ -95,6 +45,55 @@ export default function HomePage() {
   return (
     <main className="page">
       <section className="hero">
+        <header className="header shell">
+          <a className="brand" href="/" aria-label="ReelTwin.ai inicio">
+            ReelTwin<span>.ai</span>
+          </a>
+          <nav className="nav" aria-label="Principal">
+            <a href="#como-funciona">Proceso</a>
+            <a href="#pricing">Precios</a>
+            <a className="nav-action" href="#contacto">
+              Hablemos
+            </a>
+          </nav>
+        </header>
+
+        <div className="hero-content shell">
+          <p className="hero-eyebrow">
+            Para fotógrafos y videógrafos profesionales
+          </p>
+
+          <h1 className="hero-headline font-display">
+            Una sesión. <em>Diez entregables.</em>
+          </h1>
+
+          <p className="hero-sub">
+            Tu trabajo, multiplicado. Convierte cada shoot en decenas
+            de variaciones cinematográficas para tu cliente —
+            sin volver al estudio, sin re-grabar, sin nueva agenda.
+          </p>
+
+          <div className="hero-ctas">
+            <a href="#pricing" className="cta-primary">Ver precios</a>
+            <a href="#demo" className="cta-secondary">Ver multiplicación</a>
+          </div>
+
+          <div className="hero-stats">
+            <div className="hero-stat">
+              <strong>Tú firmas</strong>
+              <span>Tú haces la foto. Nosotros las variaciones.</span>
+            </div>
+            <div className="hero-stat">
+              <strong>x10 por sesión</strong>
+              <span>Decenas de entregables por shoot</span>
+            </div>
+            <div className="hero-stat">
+              <strong>24h</strong>
+              <span>Del archivo a las variaciones</span>
+            </div>
+          </div>
+        </div>
+
         <div className="hero-visuals" aria-hidden="true">
           <div className="hero-visuals-inner">
             <div className="hero-vis-item">
@@ -109,56 +108,6 @@ export default function HomePage() {
           </div>
           <div className="hero-visuals-fade" />
         </div>
-
-        <header className="header shell">
-          <a className="brand" href="/" aria-label="ReelTwin.ai inicio">
-            ReelTwin<span>.ai</span>
-          </a>
-          <nav className="nav" aria-label="Principal">
-            <a href="#como-funciona">Proceso</a>
-            <a href="#pricing">Precios</a>
-            <a className="nav-action" href="#contacto">
-              Hablemos
-            </a>
-          </nav>
-        </header>
-
-        <div className="hero-copy shell">
-          <p className="eyebrow">E-commerce · Arquitectura · Formación</p>
-          <h1>
-            Foto y vídeo<br />de estudio.{" "}
-            <em>Sin estudio.</em>
-          </h1>
-          <p className="hero-description">
-            Genera contenido visual de nivel editorial para tus productos, espacios y formadores.
-            Sin alquilar estudio, sin sesión de fotos, sin esperar semanas.
-          </p>
-          <div className="hero-actions">
-            <a className="button-primary" href="#pricing">
-              Ver precios
-              <ArrowRight />
-            </a>
-            <a className="button-play" href="#demo">
-              <Play />
-              Ver transformación
-            </a>
-          </div>
-        </div>
-
-        <div className="hero-stats shell" aria-label="Características principales">
-          <div>
-            <strong>Foto + Vídeo</strong>
-            <span>Contenido dual</span>
-          </div>
-          <div>
-            <strong>Brief a entrega</strong>
-            <span>En días, no semanas</span>
-          </div>
-          <div>
-            <strong>Sin estudio</strong>
-            <span>Sin fotógrafo, sin agenda</span>
-          </div>
-        </div>
       </section>
 
       <section className="statement shell">
@@ -170,25 +119,39 @@ export default function HomePage() {
         </h2>
       </section>
 
-      <section className="sectors shell" id="sectores">
-        <div className="section-heading">
-          <p className="eyebrow">Para quién</p>
-          <h2>Tres sectores, un proceso.</h2>
-        </div>
-        <div className="sectors-grid">
-          {sectors.map((s) => (
-            <article className="sector-card" key={s.title}>
-              <span className="sector-number">{s.number}</span>
-              <h3>{s.title}</h3>
-              <p className="sector-subtitle">{s.subtitle}</p>
-              <p>{s.description}</p>
-              <div className="sector-tags">
-                {s.tags.map((tag) => (
-                  <span className="sector-tag" key={tag}>{tag}</span>
-                ))}
-              </div>
-            </article>
-          ))}
+      <section className="audience shell">
+        <p className="section-eyebrow">Para quién</p>
+        <h2 className="section-headline font-display">
+          Un único oficio. Tres formas de multiplicar.
+        </h2>
+
+        <div className="audience-grid">
+          <article className="audience-card">
+            <span className="card-num">01</span>
+            <h3>Fotógrafo de producto</h3>
+            <p>
+              Cada SKU en diez escenarios, texturas y ambientes
+              desde una sola toma limpia.
+            </p>
+          </article>
+
+          <article className="audience-card">
+            <span className="card-num">02</span>
+            <h3>Fotógrafo de interior</h3>
+            <p>
+              El mismo espacio, distintas atmósferas, mobiliario y luz.
+              Staging virtual sin decoración física.
+            </p>
+          </article>
+
+          <article className="audience-card">
+            <span className="card-num">03</span>
+            <h3>Videógrafo y productora</h3>
+            <p>
+              Un día de rodaje convertido en clips para semanas de
+              campaña. Más entregables, mismo material base.
+            </p>
+          </article>
         </div>
       </section>
 
@@ -220,29 +183,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="cases" id="casos">
-        <div className="shell">
-          <div className="section-heading">
-            <p className="eyebrow">Casos de uso</p>
-            <h2>Tres tipos de cliente. Un mismo problema.</h2>
-          </div>
-          <div className="cases-grid">
-            {cases.map(({ icon: Icon, title, text, tags }) => (
-              <article className="case-card" key={title}>
-                <div className="case-top">
-                  <Icon />
-                  <div className="case-tags">
-                    {tags.map(tag => (
-                      <span className="case-tag" key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                </div>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
+      <section className="manifesto">
+        <h2 className="manifesto-headline font-display">
+          Tú sigues siendo el autor.
+        </h2>
+        <p className="manifesto-body">
+          No venimos a sustituirte. Venimos a darte palancas.
+          Tu sesión sigue siendo tuya — nosotros sólo multiplicamos
+          lo que ya hiciste bien, para que un día de rodaje rinda
+          como diez.
+        </p>
       </section>
 
       <section className="pro-banner" id="profesionales">
