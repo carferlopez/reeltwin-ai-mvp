@@ -5,7 +5,6 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
-import { PricingCard } from "@/components/PricingCard";
 import { ContactForm } from "@/components/ContactForm";
 
 const steps = [
@@ -196,21 +195,61 @@ export default function HomePage() {
       </section>
 
 
-      <section className="pricing shell" id="pricing">
-        <div className="section-heading pricing-heading">
-          <div>
-            <p className="eyebrow">Pago único</p>
-            <h2>Elige tu formato.</h2>
-            <p className="section-copy">
-              Sin suscripciones ni registro previo. Selecciona foto o vídeo y
-              empieza a crear.
-            </p>
-          </div>
-        </div>
+      <section id="pricing" className="pricing shell">
+        <p className="eyebrow">Suscripción</p>
+        <h2 className="pricing-headline">
+          Una herramienta. Un precio al mes.
+        </h2>
+        <p className="pricing-intro">
+          Sin packs sueltos. Sin trabajos a medida.
+          Una suscripción que renueva tu mes de variaciones.
+        </p>
+
         <div className="pricing-grid">
-          <PricingCard packageId="foto" />
-          <PricingCard packageId="monologo" />
-          <PricingCard packageId="showcase" featured />
+          <article className="pricing-card">
+            <h3>Free</h3>
+            <p className="pricing-price">0 €<span>/mes</span></p>
+            <ul>
+              <li>1 generación al mes</li>
+              <li>Con marca de agua</li>
+              <li>Para probar el resultado</li>
+            </ul>
+            <a href="#start" className="cta-secondary">Empezar gratis</a>
+          </article>
+
+          <article className="pricing-card pricing-card--featured">
+            <span className="pricing-badge">Más popular</span>
+            <h3>Pro</h3>
+            <p className="pricing-price">19 €<span>/mes</span></p>
+            <ul>
+              <li>20 generaciones al mes</li>
+              <li>Sin marca de agua</li>
+              <li>Alta resolución</li>
+              <li>Cancela cuando quieras</li>
+            </ul>
+            <a
+              href={process.env.NEXT_PUBLIC_STRIPE_PRO_LINK ?? "#pricing"}
+              className="cta-primary"
+            >
+              Suscribirme
+            </a>
+          </article>
+
+          <article className="pricing-card">
+            <h3>Studio</h3>
+            <p className="pricing-price">49 €<span>/mes</span></p>
+            <ul>
+              <li>60 generaciones al mes</li>
+              <li>Cola prioritaria</li>
+              <li>Acceso anticipado a nuevos estilos</li>
+            </ul>
+            <a
+              href={process.env.NEXT_PUBLIC_STRIPE_STUDIO_LINK ?? "#pricing"}
+              className="cta-primary"
+            >
+              Suscribirme
+            </a>
+          </article>
         </div>
       </section>
 
