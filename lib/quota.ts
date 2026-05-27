@@ -1,6 +1,7 @@
-import { supabaseAdmin } from '@/lib/supabase';
+import { createSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function checkAndReserveQuota(email: string) {
+  const supabaseAdmin = createSupabaseAdmin();
   const { data: sub, error: subErr } = await supabaseAdmin
     .from('subscriptions')
     .select('*')

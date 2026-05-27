@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { supabaseAdmin } from '@/lib/supabase';
+import { createSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { checkAndReserveQuota } from '@/lib/quota';
 import { generateImageVariations } from '@/lib/ai/imageVariations';
 
@@ -12,6 +12,7 @@ const BodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const supabaseAdmin = createSupabaseAdmin();
   // 1. Auth — identify the caller via Supabase session cookie
   const cookieStore = await cookies();
   const supabase = createServerClient(

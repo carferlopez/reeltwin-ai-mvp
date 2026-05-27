@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { ReelForm } from "@/components/ReelForm";
 
 export default async function IntakePage({
@@ -12,9 +13,9 @@ export default async function IntakePage({
   return (
     <main className="min-h-screen bg-ink px-5 py-8 text-white md:px-8 md:py-12">
       <div className="mx-auto max-w-2xl">
-        <a className="text-xl font-bold" href="/">
+        <Link className="text-xl font-bold" href="/">
           ReelTwin<span className="text-signal">.ai</span>
-        </a>
+        </Link>
         <p className="mt-16 text-xs font-bold uppercase tracking-[0.16em] text-signal">
           Material de producción
         </p>

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   Clock3,
   LockKeyhole,
@@ -45,9 +46,9 @@ export default function HomePage() {
     <main className="page">
       <section className="hero">
         <header className="header shell">
-          <a className="brand" href="/" aria-label="ReelTwin.ai inicio">
+          <Link className="brand" href="/" aria-label="ReelTwin.ai inicio">
             ReelTwin<span>.ai</span>
-          </a>
+          </Link>
           <nav className="nav" aria-label="Principal">
             <a href="#como-funciona">Proceso</a>
             <a href="#pricing">Precios</a>

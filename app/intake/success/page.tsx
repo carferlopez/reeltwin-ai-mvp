@@ -1,4 +1,5 @@
 import { CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 
 export default function IntakeSuccessPage() {
   return (
@@ -12,12 +13,12 @@ export default function IntakeSuccessPage() {
           El pedido queda en cola de producción. Enviaremos el resultado final al
           email indicado en menos de 24 horas.
         </p>
-        <a
+        <Link
           className="mt-9 inline-flex min-h-12 items-center rounded-full bg-signal px-7 font-semibold text-ink"
           href="/"
         >
           Volver
-        </a>
+        </Link>
       </section>
     </main>
   );
