@@ -63,7 +63,7 @@ export default function HomePage() {
           </p>
 
           <h1 className="hero-headline font-display">
-            Una sesión. <em>Diez entregables.</em>
+            Una sesión. <em>Infinitas sesiones.</em>
           </h1>
 
           <p className="hero-sub">
