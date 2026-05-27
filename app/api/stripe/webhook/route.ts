@@ -103,6 +103,7 @@ export async function POST(request: Request) {
   const signature = (await headers()).get("stripe-signature");
 
   if (!signature) {
+    console.error("[stripe-webhook] Missing Stripe signature");
     return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
   }
 
@@ -115,18 +116,23 @@ export async function POST(request: Request) {
       signature,
       requiredEnv("STRIPE_WEBHOOK_SECRET")
     );
-  } catch {
+  } catch (err: any) {
+    console.error(`[stripe-webhook] Invalid Stripe signature: ${err.message}`);
     return NextResponse.json({ error: "Invalid Stripe signature" }, { status: 400 });
   }
+
+  console.log(`[stripe-webhook] Evento recibido de Stripe: ${event.type}`);
 
   const supabase = createSupabaseAdmin();
 
   // ── Legacy: one-off checkout sessions ────────────────────────────────────
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    console.log(`[stripe-webhook] Procesando checkout.session.completed heredado: ${session.id}`);
     const packageId = session.metadata?.package_id ?? "unknown";
     const customerEmail =
       session.customer_details?.email ?? session.customer_email ?? "unknown";
+    console.log(`[stripe-webhook] Email del cliente obtenido: ${customerEmail}`);
 
     const { error } = await supabase.from("orders").upsert(
       {
@@ -142,19 +148,24 @@ export async function POST(request: Request) {
       { onConflict: "stripe_session_id" }
     );
     if (error) {
+      console.error("[stripe-webhook] Error al registrar el pedido heredado en base de datos:", error);
       return NextResponse.json({ error: "Order write failed" }, { status: 500 });
     }
+    console.log(`[stripe-webhook] Pedido heredado registrado/actualizado con éxito.`);
   }
 
   // ── Subscription created ──────────────────────────────────────────────────
   if (event.type === "customer.subscription.created") {
     const subscription = event.data.object as Stripe.Subscription;
+    console.log(`[stripe-webhook] Procesando customer.subscription.created: ${subscription.id}`);
 
     const customer = await stripe.customers.retrieve(subscription.customer as string);
     const email = (customer as Stripe.Customer).email!;
+    console.log(`[stripe-webhook] Email del cliente obtenido de Stripe: ${email}`);
 
     const tier = subscription.items.data[0].price.lookup_key as "pro" | "studio";
     const quota = QUOTA_BY_TIER[tier] ?? 20;
+    console.log(`[stripe-webhook] Datos del plan: tier=${tier}, quota=${quota}`);
 
     // Upsert subscription row
     const { error: subErr } = await supabase.from("subscriptions").upsert(
@@ -171,42 +182,51 @@ export async function POST(request: Request) {
     );
 
     if (subErr) {
-      console.error("[webhook] subscription upsert failed:", subErr);
+      console.error("[stripe-webhook] Error al insertar/actualizar suscripción en base de datos:", subErr);
       return NextResponse.json({ error: "Subscription write failed" }, { status: 500 });
     }
+    console.log(`[stripe-webhook] Suscripción registrada/actualizada con éxito en base de datos para: ${email}`);
 
-    // Generate magic link (does NOT send email — we handle that via Resend)
-    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/studio` },
-    });
+    // Generate magic link + send welcome email wrapped in a robust try/catch
+    try {
+      console.log(`[stripe-webhook] Generando enlace mágico de acceso para: ${email}`);
+      const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/studio` },
+      });
 
-    if (linkErr || !linkData?.properties?.action_link) {
-      console.error("[webhook] magic link generation failed:", linkErr);
-      return NextResponse.json({ error: "Magic link failed" }, { status: 500 });
-    }
+      if (linkErr || !linkData?.properties?.action_link) {
+        throw new Error(linkErr?.message || "No se pudo generar el enlace mágico de Supabase Auth.");
+      }
 
-    const magicLink = linkData.properties.action_link;
+      const magicLink = linkData.properties.action_link;
+      console.log("[stripe-webhook] Enlace mágico de acceso generado correctamente.");
 
-    // Send branded welcome email via Resend
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const { error: emailErr } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL!,
-      to: email,
-      subject: `Tu Studio ReelTwin está listo — ${quota} generaciones te esperan`,
-      html: buildWelcomeEmail(tier, quota, magicLink),
-    });
+      console.log(`[stripe-webhook] Enviando email de bienvenida via Resend a: ${email} (desde: ${process.env.RESEND_FROM_EMAIL})`);
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const { error: emailErr } = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL!,
+        to: email,
+        subject: `Tu Studio ReelTwin está listo — ${quota} generaciones te esperan`,
+        html: buildWelcomeEmail(tier, quota, magicLink),
+      });
 
-    if (emailErr) {
-      // Non-fatal: subscription is written, just log the email failure
-      console.error("[webhook] welcome email failed:", emailErr);
+      if (emailErr) {
+        throw emailErr;
+      }
+      console.log("[stripe-webhook] Email de bienvenida enviado con éxito via Resend.");
+    } catch (err: any) {
+      // Non-fatal error: subscription is already committed in the DB, just log the issue.
+      // Returning a 200 to Stripe prevents endless retries of the webhook event.
+      console.error(`[stripe-webhook] Error no fatal en flujo de onboarding/email: ${err.message || err}`);
     }
   }
 
   // ── Subscription updated ──────────────────────────────────────────────────
   if (event.type === "customer.subscription.updated") {
     const subscription = event.data.object as Stripe.Subscription;
+    console.log(`[stripe-webhook] Procesando customer.subscription.updated: ${subscription.id}`);
     const tier = subscription.items.data[0].price.lookup_key as "pro" | "studio";
     const quota = QUOTA_BY_TIER[tier] ?? 20;
 
@@ -218,11 +238,14 @@ export async function POST(request: Request) {
       trialing: "active",
     };
 
+    const status = statusMap[subscription.status] ?? "active";
+    console.log(`[stripe-webhook] Actualizando estado de suscripción a: ${status} (tier: ${tier}, quota: ${quota})`);
+
     const { error } = await supabase
       .from("subscriptions")
       .update({
         tier,
-        status: statusMap[subscription.status] ?? "active",
+        status,
         quota_total: quota,
         current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
         current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
@@ -230,14 +253,16 @@ export async function POST(request: Request) {
       .eq("stripe_subscription_id", subscription.id);
 
     if (error) {
-      console.error("[webhook] subscription update failed:", error);
+      console.error("[stripe-webhook] Error al actualizar la suscripción en base de datos:", error);
       return NextResponse.json({ error: "Subscription update failed" }, { status: 500 });
     }
+    console.log(`[stripe-webhook] Suscripción ${subscription.id} actualizada con éxito en base de datos.`);
   }
 
   // ── Subscription deleted ──────────────────────────────────────────────────
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
+    console.log(`[stripe-webhook] Procesando customer.subscription.deleted: ${subscription.id}`);
 
     const { error } = await supabase
       .from("subscriptions")
@@ -245,9 +270,10 @@ export async function POST(request: Request) {
       .eq("stripe_subscription_id", subscription.id);
 
     if (error) {
-      console.error("[webhook] subscription cancel failed:", error);
+      console.error("[stripe-webhook] Error al marcar suscripción como cancelada en base de datos:", error);
       return NextResponse.json({ error: "Subscription cancel failed" }, { status: 500 });
     }
+    console.log(`[stripe-webhook] Suscripción ${subscription.id} marcada como cancelada con éxito.`);
   }
 
   return NextResponse.json({ received: true });
