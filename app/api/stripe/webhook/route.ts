@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { Resend } from "resend";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { createStripeClient } from "@/lib/stripe";
+import { log } from "@/lib/logger";
 import { requiredEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -128,11 +129,17 @@ export async function POST(request: Request) {
   // ── Legacy: one-off checkout sessions ────────────────────────────────────
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    console.log(`[stripe-webhook] Procesando checkout.session.completed heredado: ${session.id}`);
+    log("payment_received", {
+      order_reference: session.id,
+      package_id: session.metadata?.package_id ?? "unknown",
+      customer_email: session.customer_details?.email ?? session.customer_email ?? "unknown",
+      amount_total: session.amount_total ?? 0,
+      currency: session.currency ?? "eur"
+    });
+
     const packageId = session.metadata?.package_id ?? "unknown";
     const customerEmail =
       session.customer_details?.email ?? session.customer_email ?? "unknown";
-    console.log(`[stripe-webhook] Email del cliente obtenido: ${customerEmail}`);
 
     const { error } = await supabase.from("orders").upsert(
       {
@@ -148,10 +155,15 @@ export async function POST(request: Request) {
       { onConflict: "stripe_session_id" }
     );
     if (error) {
-      console.error("[stripe-webhook] Error al registrar el pedido heredado en base de datos:", error);
+      log("order_registration_failed", {
+        order_reference: session.id,
+        error: error
+      });
       return NextResponse.json({ error: "Order write failed" }, { status: 500 });
     }
-    console.log(`[stripe-webhook] Pedido heredado registrado/actualizado con éxito.`);
+    log("order_registered_successfully", {
+      order_reference: session.id
+    });
   }
 
   // ── Subscription created ──────────────────────────────────────────────────

@@ -21,6 +21,8 @@ No test suite exists. Manual QA via the sandbox mode (see below).
 2. `/intake` page validates the payment, then collects a base video + script via `ReelForm`
 3. The video is uploaded to Supabase Storage via a server-side proxy (bypasses browser CORS)
 4. `process-instant` API orchestrates Gemini Omni (or a simulation fallback) and stores the result in `completed-reels` bucket
+5. The buyer receives a transactional notification email with a direct secure download link (expires in 30 days) via Resend
+
 
 ### Key API Routes
 
@@ -99,4 +101,9 @@ STRIPE_WEBHOOK_SECRET=
 GEMINI_API_KEY=                     # If absent → simulation mode
 REPLICATE_API_TOKEN=                # If present → production Luma Dream Machine render
 NEXT_PUBLIC_VIDEO_SIMULATION=true   # Force simulation even when GEMINI_API_KEY is set
+
+# Resend Email Configuration
+RESEND_API_KEY=                     # Resend API Key for transactional email delivery
+EMAIL_FROM=                         # Default: entregas@carlosmakes.com
+
 ```

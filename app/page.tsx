@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { ContactForm } from "@/components/ContactForm";
+import { Faq } from "@/components/sections/Faq";
 
 const steps = [
   {
@@ -100,7 +101,7 @@ export default function HomePage() {
               <Image alt="" fill priority sizes="(max-width: 900px) 0vw, 48vw" src="/mujer.jpeg" style={{ objectFit: "cover", objectPosition: "center 20%" }} />
             </div>
             <div className="hero-vis-item">
-              <Image alt="" fill sizes="(max-width: 900px) 0vw, 48vw" src="/sillon.jpeg" style={{ objectFit: "cover" }} />
+              <Image alt="" fill sizes="(max-width: 900px) 0vw, 48vw" src="/sillon-v2.jpeg" style={{ objectFit: "cover" }} />
             </div>
             <div className="hero-vis-item">
               <Image alt="" fill sizes="(max-width: 900px) 0vw, 48vw" src="/taza.jpeg" style={{ objectFit: "cover" }} />
@@ -284,15 +285,25 @@ export default function HomePage() {
         </div>
       </section>
 
+      <Faq />
+
       <footer className="footer shell">
-        <span className="brand">
-          ReelTwin<span>.ai</span>
-        </span>
-        <div className="footer-info">
-          <span>Producción de imagen y vídeo con IA para empresas</span>
-          <span>© Carlos Makes, 2026</span>
+        <div className="w-full flex flex-col md:flex-row justify-between items-center gap-4">
+          <span className="brand">
+            ReelTwin<span>.ai</span>
+          </span>
+          <div className="footer-info">
+            <span>Producción de imagen y vídeo con IA para empresas</span>
+            <span>© Carlos Makes, 2026</span>
+          </div>
+          <span>Entrega en 24h</span>
         </div>
-        <span>Entrega en 24h</span>
+
+        <div className="footer-links">
+          <Link href="/legal/aviso-legal">Aviso legal</Link>
+          <span>·</span>
+          <Link href="/legal/privacidad">Privacidad</Link>
+        </div>
       </footer>
     </main>
   );

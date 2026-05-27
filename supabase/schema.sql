@@ -27,7 +27,8 @@ create table if not exists public.intakes (
   status text not null default 'received',
   created_at timestamptz not null default now(),
   delivered_at timestamptz,
-  purge_after timestamptz not null default (now() + interval '7 days')
+  purge_after timestamptz not null default (now() + interval '7 days'),
+  liability_accepted_at timestamptz not null default now()
 );
 
 alter table public.orders enable row level security;

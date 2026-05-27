@@ -3,6 +3,8 @@ import { z } from "zod";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { CINEMATIC_STYLES } from "@/config/styles";
 import { isMockMode, getMockDb, saveMockDb } from "@/lib/mockDb";
+import { sendDeliveryEmail } from "@/lib/email";
+import { log } from "@/lib/logger";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -15,7 +17,10 @@ const processInstantSchema = z.object({
     errorMap: () => ({ message: "El estilo cinematográfico seleccionado no es válido." })
   }),
   videoUrl: z.string().url("La URL del vídeo no es válida."),
-  scriptText: z.string().min(10, "El guion debe tener al menos 10 caracteres.").max(500, "El guion no puede superar los 500 caracteres.")
+  scriptText: z.string().min(10, "El guion debe tener al menos 10 caracteres.").max(500, "El guion no puede superar los 500 caracteres."),
+  liability_accepted: z.literal(true, {
+    errorMap: () => ({ message: "Debes aceptar expresamente la responsabilidad legal sobre el uso de la imagen de los performers." })
+  })
 });
 
 export async function POST(request: Request) {
@@ -33,6 +38,12 @@ export async function POST(request: Request) {
 
     const { sessionId, selectedStyle, videoUrl, scriptText } = parsed.data;
     sessionToUpdate = sessionId;
+
+    log("render_started", {
+      order_reference: sessionId,
+      style: selectedStyle,
+      video_url: videoUrl
+    });
 
     // --- MOCK MODE FALLBACK ---
     if (isMockMode()) {
@@ -118,7 +129,8 @@ export async function POST(request: Request) {
         result_video_path: `mock-storage/completed-reels/${sessionId}/completed.mp4`,
         status: "delivered",
         delivered_at: new Date().toISOString(),
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        liability_accepted_at: new Date().toISOString()
       };
 
       saveMockDb(db);
@@ -126,9 +138,33 @@ export async function POST(request: Request) {
       // Build the local video URL
       const localVideoUrl = `/mock-storage/completed-reels/${sessionId}/completed.mp4`;
 
+      log("render_completed", {
+        order_reference: sessionId,
+        final_video_url: localVideoUrl,
+        mode: "mock"
+      });
+
+      // Send the mock delivery email
+      try {
+        const recipient = order.customer_email || "cliente-test@reeltwin.ai";
+        await sendDeliveryEmail({
+          to: recipient,
+          finalVideoUrl: localVideoUrl,
+          orderReference: sessionId
+        });
+        log("email_sent", {
+          order_reference: sessionId,
+          recipient,
+          mode: "mock"
+        });
+      } catch (emailErr) {
+        console.error("[MOCK MODE] Failed to send delivery email:", emailErr);
+      }
+
       return NextResponse.json({
         success: true,
-        finalVideoUrl: localVideoUrl
+        finalVideoUrl: localVideoUrl,
+        redirectUrl: `/intake/success?session_id=${sessionId}`
       });
     }
 
@@ -378,6 +414,12 @@ export async function POST(request: Request) {
       throw new Error("Fallo al actualizar el estado final del pedido en la base de datos.");
     }
 
+    log("render_completed", {
+      order_reference: sessionId,
+      final_video_url: publicUrl,
+      mode: "production"
+    });
+
     // Save final completed state in intakes
     await supabase.from("intakes").insert({
       order_reference: sessionId,
@@ -388,13 +430,31 @@ export async function POST(request: Request) {
       training_video_bucket: "raw-videos",
       result_video_path: completedPath,
       status: "delivered",
-      delivered_at: new Date().toISOString()
+      delivered_at: new Date().toISOString(),
+      liability_accepted_at: new Date().toISOString()
     });
+
+    // Send the real delivery email
+    try {
+      await sendDeliveryEmail({
+        to: order.customer_email,
+        finalVideoUrl: publicUrl,
+        orderReference: sessionId
+      });
+      log("email_sent", {
+        order_reference: sessionId,
+        recipient: order.customer_email,
+        mode: "production"
+      });
+    } catch (emailErr) {
+      console.error("Failed to send real delivery email:", emailErr);
+    }
 
     // Paso F: Respuesta Inmediata síncrona
     return NextResponse.json({
       success: true,
-      finalVideoUrl: publicUrl
+      finalVideoUrl: publicUrl,
+      redirectUrl: `/intake/success?session_id=${sessionId}`
     });
 
   } catch (error: any) {

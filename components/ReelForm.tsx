@@ -24,6 +24,7 @@ export function ReelForm({ initialOrderReference }: { initialOrderReference?: st
   const [selectedStyle, setSelectedStyle] = useState("nordic-noir");
   const [script, setScript] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [liabilityAccepted, setLiabilityAccepted] = useState(false);
 
   // Instant Gemini Omni states
   const [isProcessing, setIsProcessing] = useState(false);
@@ -178,14 +179,15 @@ export function ReelForm({ initialOrderReference }: { initialOrderReference?: st
                 sessionId: sessionId,
                 selectedStyle: selectedStyle,
                 videoUrl: videoUrl,
-                scriptText: script
+                scriptText: script,
+                liability_accepted: true
               })
             });
 
             const apiData = await apiResponse.json();
 
             if (apiResponse.ok && apiData.success) {
-              setFinalVideo(apiData.finalVideoUrl);
+              window.location.href = `/intake/success?session_id=${sessionId}`;
             } else {
               setErrorMessage(apiData.error || "Ocurrió un error al procesar tu escena instantánea.");
             }
@@ -455,6 +457,36 @@ export function ReelForm({ initialOrderReference }: { initialOrderReference?: st
         </div>
       </div>
 
+      {/* Checkbox de Responsabilidad Legal */}
+      <div className="block pt-2">
+        <label className="flex items-start gap-3 cursor-pointer group select-none">
+          <div className="relative flex items-center mt-1">
+            <input
+              type="checkbox"
+              checked={liabilityAccepted}
+              onChange={(e) => setLiabilityAccepted(e.target.checked)}
+              className="sr-only peer"
+              required
+            />
+            {/* Custom Checkbox Frame */}
+            <div className="h-5 w-5 rounded border border-zinc/60 bg-ink/40 transition-all duration-200 flex items-center justify-center peer-checked:border-signal peer-checked:bg-signal peer-hover:border-slate-300 group-hover:border-slate-300">
+              <svg 
+                className="h-3.5 w-3.5 text-ink stroke-[3.5] transition-opacity duration-200"
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+                style={{ display: liabilityAccepted ? 'block' : 'none' }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </div>
+          </div>
+          <span className="text-xs leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors duration-200">
+            Acepto expresamente que soy el titular legítimo de los derechos de imagen de los performers cargados y asumo la total responsabilidad legal derivada de la generación de su clon digital mediante IA.
+          </span>
+        </label>
+      </div>
+
       {/* Massive Brutalist Button */}
       <div className="pt-4 border-t border-zinc/30">
         {isSubmitting ? (
@@ -474,18 +506,25 @@ export function ReelForm({ initialOrderReference }: { initialOrderReference?: st
             </div>
           </div>
         ) : (
-          <button
-            type="submit"
-            disabled={!videoFile || script.length < 10}
-            className={`flex min-h-[58px] w-full items-center justify-center gap-3 rounded-xl text-lg font-bold transition-all duration-200 ${
-              videoFile && script.length >= 10
-                ? "bg-signal text-ink hover:bg-[#e2ff78] cursor-pointer shadow-lg shadow-signal/10 active:translate-y-0.5"
-                : "bg-zinc/35 text-slate-500 cursor-not-allowed"
-            }`}
-          >
-            Generar Gemelo Digital
-            <ArrowRight className="h-5 w-5" />
-          </button>
+          <div className="space-y-3 w-full">
+            <button
+              type="submit"
+              disabled={!videoFile || script.length < 10 || !liabilityAccepted}
+              className={`flex min-h-[58px] w-full items-center justify-center gap-3 rounded-xl text-lg font-bold transition-all duration-200 ${
+                videoFile && script.length >= 10 && liabilityAccepted
+                  ? "bg-signal text-ink hover:bg-[#e2ff78] cursor-pointer shadow-lg shadow-signal/10 active:translate-y-0.5"
+                  : "bg-zinc/35 text-slate-500 cursor-not-allowed"
+              }`}
+            >
+              Generar Gemelo Digital
+              <ArrowRight className="h-5 w-5" />
+            </button>
+            {videoFile && script.length >= 10 && !liabilityAccepted && (
+              <p className="text-center text-xs text-danger font-semibold">
+                Debes marcar la casilla de responsabilidad legal para continuar.
+              </p>
+            )}
+          </div>
         )}
       </div>
     </form>

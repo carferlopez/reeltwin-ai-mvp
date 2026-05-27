@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { isMockMode, getMockDb, saveMockDb } from "@/lib/mockDb";
+import { log } from "@/lib/logger";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -14,7 +15,10 @@ const processReelSchema = z.object({
     errorMap: () => ({ message: "El estilo cinematográfico seleccionado no es válido." })
   }),
   videoUrl: z.string().url("La URL del vídeo no es válida."),
-  scriptText: z.string().min(10, "El guion debe tener al menos 10 caracteres.").max(500, "El guion no puede superar los 500 caracteres.")
+  scriptText: z.string().min(10, "El guion debe tener al menos 10 caracteres.").max(500, "El guion no puede superar los 500 caracteres."),
+  liability_accepted: z.literal(true, {
+    errorMap: () => ({ message: "Debes aceptar expresamente la responsabilidad legal sobre el uso de la imagen de los performers." })
+  })
 });
 
 // GET /api/process-reel?order_reference=XXX[&action=get-upload-url][&filename=video.mp4]
@@ -32,7 +36,7 @@ export async function GET(request: Request) {
 
   // --- MOCK MODE FALLBACK ---
   if (isMockMode()) {
-    console.log("[MOCK MODE] Validating order reference in local JSON database:", orderReference);
+    log("order_validation_started", { order_reference: orderReference, mode: "mock" });
     const db = getMockDb();
     const order = db.orders[orderReference];
 
@@ -165,7 +169,7 @@ export async function POST(request: Request) {
 
     // --- MOCK MODE FALLBACK ---
     if (isMockMode()) {
-      console.log("[MOCK MODE] Processing JSON metadata in local JSON database...");
+      log("metadata_processing_started", { order_reference: sessionId, mode: "mock" });
       
       const db = getMockDb();
       const order = db.orders[sessionId];
@@ -186,7 +190,8 @@ export async function POST(request: Request) {
         training_video_path: `mock-storage/raw-videos/${sessionId}/video.mp4`,
         training_video_bucket: "raw-videos",
         status: "received",
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        liability_accepted_at: new Date().toISOString()
       };
       
       saveMockDb(db);
@@ -270,9 +275,39 @@ export async function PUT(request: Request) {
     if (action === "mock-upload" && orderReference) {
       console.log("Receiving video file PUT upload proxy for:", orderReference);
       
+      // 1. MIME type validation
+      const contentType = request.headers.get("content-type") || "";
+      if (!contentType.startsWith("video/mp4") && !contentType.startsWith("video/quicktime")) {
+        return NextResponse.json(
+          { error: "Tipo de archivo no permitido. Solo se aceptan formatos MP4 y MOV.", code: "INVALID_MIME_TYPE" },
+          { status: 400 }
+        );
+      }
+
       const buffer = Buffer.from(await request.arrayBuffer());
-      
+      const sizeBytes = buffer.length;
+
+      // 2. Empty file validation
+      if (sizeBytes === 0) {
+        return NextResponse.json(
+          { error: "El archivo de vídeo está vacío.", code: "EMPTY_FILE" },
+          { status: 400 }
+        );
+      }
+
+      // 3. Max file size validation (500 MB)
+      const MAX_SIZE = 500 * 1024 * 1024;
+      if (sizeBytes > MAX_SIZE) {
+        return NextResponse.json(
+          { error: "El archivo de vídeo supera el límite de 500 MB.", code: "FILE_TOO_LARGE" },
+          { status: 400 }
+        );
+      }
+
+      // TODO: Integrate ffprobe to perform deep inspections of container, codec (H.264), bitrate, frame rate, duration, and audio formats.
+
       if (isMockMode()) {
+        log("upload_started", { order_reference: orderReference, mode: "mock" });
         // Save directly to the local public folder (Mock Mode)
         const filePath = path.resolve(
           process.cwd(), 
@@ -280,12 +315,16 @@ export async function PUT(request: Request) {
         );
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, buffer);
-        console.log("[MOCK MODE] Local video file successfully written to:", filePath);
+        log("upload_succeeded", {
+          order_reference: orderReference,
+          file_path: filePath,
+          mode: "mock"
+        });
         return NextResponse.json({ success: true });
       } else {
         // Upload from our Next.js backend to real Supabase Storage (Production Mode)
         // This completely bypasses browser-side CORS issues!
-        console.log("[PRODUCTION] Uploading proxy video from Next.js server to real Supabase Storage bucket 'raw-videos'...");
+        log("upload_started", { order_reference: orderReference, mode: "production" });
         const supabase = createSupabaseAdmin();
         const storagePath = `${orderReference}/video.mp4`;
 
@@ -314,11 +353,19 @@ export async function PUT(request: Request) {
         }
 
         if (error) {
-          console.error("Supabase Storage upload error:", error);
+          log("upload_failed", {
+            order_reference: orderReference,
+            error: error,
+            mode: "production"
+          });
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        console.log("[PRODUCTION] Upload to Supabase Storage succeeded:", data?.path);
+        log("upload_succeeded", {
+          order_reference: orderReference,
+          path: data?.path,
+          mode: "production"
+        });
         return NextResponse.json({ success: true });
       }
     }
